@@ -1,0 +1,48 @@
+# --- Dependências (Ignora em todas as subpastas) ---
+node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# --- Sistema Operacional e Editores ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# --- Segurança e Variáveis de Ambiente (CRÍTICO) ---
+# Ignora arquivos de configuração local com senhas
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# --- Backend (Node.js/Express) ---
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+coverage/
+# Caso gere arquivos de upload localmente
+uploads/
+
+# --- Frontend (Vue.js) ---
+# Build de produção
+dist/
+dist-ssr/
+# Arquivos temporários de cache
+.eslintcache
+.cache/
+
+# --- Banco de Dados (PostgreSQL) ---
+# Evita subir dumps de banco de dados pesados acidentalmente
+*.sql.gz
+*.dump
+
+# --- Infra/Docker ---
+# Dados persistentes locais do Docker (se mapeados na pasta)
+docker-data/
+postgres-data/

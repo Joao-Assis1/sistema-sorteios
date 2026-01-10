@@ -1,0 +1,55 @@
+version: "3.8" # Versão moderna da sintaxe do Compose
+
+services:
+  # --- Serviço de Banco de Dados ---
+  database:
+    image: postgres:15-alpine # Usa a imagem oficial do Docker Hub
+    container_name: meu-postgres
+    restart: always
+    environment:
+      # Variáveis de Ambiente: Segredos passados para configurar o contêiner na inicialização.
+      POSTGRES_USER: ${DB_USER:-admin}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-admin123}
+      POSTGRES_DB: meu_banco
+    ports:
+      - "5432:5432" # Mapeia a porta do host para o contêiner (Acesso via ferramenta local como DBeaver)
+    volumes:
+      - pgdata:/var/lib/postgresql/data # Persistência dos dados (veja explicação abaixo)
+
+  # --- Serviço Backend (Node) ---
+  backend:
+    build: ./backend # Indica onde está o Dockerfile
+    container_name: meu-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000" # Exposto para que o Frontend (no navegador) consiga acessá-lo
+    environment:
+      # Conexão com o Banco. Note que o 'host' é o NOME do serviço acima ('database').
+      DATABASE_URL: postgres://${DB_USER:-admin}:${DB_PASSWORD:-admin123}@database:5432/meu_banco
+      PORT: 3000
+    depends_on:
+      - database # Garante que o backend só inicie após o container do banco ser criado
+    volumes:
+      # Bind Mount: Espelha sua pasta local para dentro do contêiner.
+      # Qualquer alteração que você fizer no código local reflete instantaneamente lá dentro.
+      - ./backend:/app
+      - /app/node_modules # Truque para usar os node_modules do contêiner, não do host
+
+  # --- Serviço Frontend (Vue) ---
+  frontend:
+    build: ./frontend
+    container_name: meu-frontend
+    ports:
+      - "8080:8080"
+    environment:
+      # Define a URL da API.
+      # ATENÇÃO: Como o Vue roda no navegador do usuário, ele chama 'localhost', não 'backend'.
+      VUE_APP_API_URL: http://localhost:3000
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    # Habilita o polling para que o Hot Reload funcione bem em alguns sistemas (como Windows/WSL)
+    command: npm run serve -- --host 0.0.0.0
+
+volumes:
+  pgdata: # Declaração do volume nomeado para o banco
