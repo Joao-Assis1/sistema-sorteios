@@ -1,18 +1,22 @@
 import pg from "pg";
-const { Pool } = pg;
+import dotenv from "dotenv";
 
-// Verifica ambiente para SSL
-const isProduction = process.env.NODE_ENV === "production";
+dotenv.config();
+
+const { Pool } = pg;
 
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT || 5432,
-  ssl: isProduction ? { rejectUnauthorized: false } : false,
+  password: process.env.DB_PASS,
+  port: process.env.DB_PORT,
 });
 
-// Exportação nomeada para facilitar imports
+pool.on("error", (err) => {
+  console.error("Unexpected error on idle client", err);
+  process.exit(-1);
+});
+
 export const query = (text, params) => pool.query(text, params);
-export { pool };
+export const dbPool = pool;

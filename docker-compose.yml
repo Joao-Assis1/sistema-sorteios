@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: sorteios-db
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: sorteios_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - sorteios-network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: sorteios-backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=user
+      - DB_PASS=password
+      - DB_NAME=sorteios_db
+      - DB_PORT=5432
+      - PORT=3000
+    depends_on:
+      - postgres
+    command: npm run dev
+    networks:
+      - sorteios-network
+
+  frontend:
+    build:
+      context: ./frontend/sistema-sorteios-front
+      dockerfile: Dockerfile
+    container_name: sorteios-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/sistema-sorteios-front:/app
+      - /app/node_modules
+    networks:
+      - sorteios-network
+
+networks:
+  sorteios-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
