@@ -1,25 +1,47 @@
-import { query } from "../config/database.js";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import userRepository from "../repositories/UserRepository.js";
 
 class AuthService {
-  async login(email, senhaTextoPlano) {
-    const sql = "SELECT * FROM administradores WHERE email = $1";
-    const result = await query(sql, [email]);
-    const admin = result.rows[0];
+  async register(name, email, password) {
+    const existingUser = await userRepository.findByEmail(email);
+    if (existingUser) {
+      throw new Error("User already exists");
+    }
 
-    if (!admin) throw new Error("Credenciais inválidas.");
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
 
-    const senhaValida = await bcrypt.compare(senhaTextoPlano, admin.senha_hash);
-    if (!senhaValida) throw new Error("Credenciais inválidas.");
+    const user = await userRepository.create({ name, email, passwordHash });
+    return user;
+  }
+
+  async login(email, password) {
+    const user = await userRepository.findByEmail(email);
+    if (!user) {
+      throw new Error("Invalid credentials");
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password_hash);
+    if (!isMatch) {
+      throw new Error("Invalid credentials");
+    }
 
     const token = jwt.sign(
-      { id: admin.id, email: admin.email, role: "ADMIN" },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET || "secret_dev_key", // TODO: Move to env
+      { expiresIn: "1d" }
     );
 
-    return { token, admin: { id: admin.id, email: admin.email } };
+    return {
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+      token,
+    };
   }
 }
 
