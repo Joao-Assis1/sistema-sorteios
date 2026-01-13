@@ -8,6 +8,13 @@ export const useRaffleStore = defineStore('raffle', () => {
   const isLoadingWinners = ref(false)
   const error = ref(null)
 
+  // 2. Dados Admin (Estatísticas - O que estava faltando)
+  const stats = ref({
+    participants: 6, // Baseado na imagem 2
+    rafflesCount: 6, // Baseado na imagem 2
+    lastRaffleDate: '03/09/2025', // Baseado na imagem 2
+  })
+
   // --- Actions ---
 
   // Verifica status do participante (Simulado por enquanto)
@@ -36,6 +43,7 @@ export const useRaffleStore = defineStore('raffle', () => {
     winners,
     isLoadingWinners,
     error,
+    stats,
     checkStatus,
     fetchWinners,
   }
