@@ -1,0 +1,241 @@
+openapi: 3.0.0
+info:
+  title: Sistema de Sorteios API
+  description: API responsável pela gestão de assinaturas, autenticação e realização de sorteios.
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Servidor Local (Docker)
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "fail"
+        message:
+          type: string
+          example: "Mensagem de erro descritiva"
+    
+    SubscriptionInput:
+      type: object
+      required:
+        - nome
+        - email
+        - lastlink_id
+      properties:
+        nome:
+          type: string
+          example: "João da Silva"
+        email:
+          type: string
+          format: email
+          example: "joao@email.com"
+        telefone:
+          type: string
+          example: "11999999999"
+        lastlink_id:
+          type: string
+          description: ID da transação vindo do webhook
+          example: "tr_123456789"
+        inicio:
+          type: string
+          format: date-time
+          example: "2023-10-01T10:00:00Z"
+        fim:
+          type: string
+          format: date-time
+          example: "2023-11-01T10:00:00Z"
+
+paths:
+  # -------------------------
+  # AUTENTICAÇÃO
+  # -------------------------
+  /auth/login:
+    post:
+      summary: Autenticação Administrativa
+      tags: [Auth]
+      description: Realiza login de administrador e retorna token JWT.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, senha]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "admin@sorteios.com"
+                senha:
+                  type: string
+                  format: password
+                  example: "123456"
+      responses:
+        "200":
+          description: Login realizado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "401":
+          description: Credenciais inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # -------------------------
+  # ASSINATURAS (WEBHOOK)
+  # -------------------------
+  /webhook/cadastro:
+    post:
+      summary: Webhook de Cadastro de Assinatura
+      tags: [Subscription]
+      description: Rota pública chamada pelo sistema de pagamento (ex: Lastlink) para registrar um novo usuário e sua assinatura.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscriptionInput'
+      responses:
+        "201":
+          description: Assinatura criada com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: integer
+                        example: 1
+                      usuario_id:
+                        type: integer
+                        example: 45
+                      status:
+                        type: string
+                        example: "ATIVA"
+        "400":
+          description: Dados incompletos (Middleware Validation)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                status: "fail"
+                message: "Dados incompletos."
+
+  # -------------------------
+  # CONSULTA PÚBLICA
+  # -------------------------
+  /usuario/status:
+    get:
+      summary: Verificar Status da Assinatura
+      tags: [Subscription]
+      description: Verifica se um e-mail possui uma assinatura ativa para participar do sorteio.
+      parameters:
+        - in: query
+          name: email
+          schema:
+            type: string
+            format: email
+          required: true
+          description: E-mail do usuário para busca
+      responses:
+        "200":
+          description: Status retornado com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  data:
+                    type: object
+                    properties:
+                      ativo:
+                        type: boolean
+                        example: true
+                      validade:
+                        type: string
+                        format: date-time
+        "404":
+          description: Usuário não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # -------------------------
+  # ADMINISTRAÇÃO (PRIVADO)
+  # -------------------------
+  /admin/sortear:
+    post:
+      summary: Realizar Sorteio
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      description: Rota protegida. Executa a lógica de sorteio entre assinantes ativos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [premio]
+              properties:
+                premio:
+                  type: string
+                  example: "iPhone 15 Pro"
+      responses:
+        "200":
+          description: Ganhador definido com sucesso
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  data:
+                    type: object
+                    properties:
+                      ganhador:
+                        type: string
+                        example: "João da Silva"
+                      email:
+                        type: string
+                        example: "j***@email.com"
+        "401":
+          description: Token não fornecido ou inválido
+        "500":
+          description: Erro interno ao realizar sorteio
