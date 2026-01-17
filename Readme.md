@@ -1,100 +1,111 @@
-# 🎟️ Sistema de Sorteios
+# 🎟️ Sistema de Sorteios & Assinaturas (SaaS)
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg) ![License](https://img.shields.io/badge/license-MIT-green.svg) ![Stack](https://img.shields.io/badge/stack-MEVN-orange.svg)
+![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![Vue.js](https://img.shields.io/badge/vue-3.x-green.svg)
+![Tailwind](https://img.shields.io/badge/style-tailwind-38bdf8.svg)
+![Node.js](https://img.shields.io/badge/node-18.x-green.svg)
 
-> **Plataforma completa para gestão, venda e realização de rifas online de alta performance.**
+> **Plataforma Full Stack para gestão de assinaturas e sorteios automatizados.**
 
-Este projeto é um Monorepo unificando Frontend e Backend em um ambiente containerizado, focado em escalabilidade, segurança e experiência de desenvolvimento (DX).
+Este projeto é um Monorepo containerizado que gerencia um clube de assinaturas. Usuários ativos concorrem automaticamente a prêmios diários. O sistema conta com integração via Webhooks de pagamento, painel administrativo seguro e interface pública responsiva.
 
 ---
 
-## 🏗️ Arquitetura e Fluxo de Dados
+## 📸 Showcase
 
-Abaixo, a topologia da aplicação. O tráfego da API é gerenciado pelo Nginx (Reverse Proxy), garantindo segurança e balanceamento entre o cliente Vue.js e o servidor Node.js.
+|             Landing Page Pública             |               Painel Administrativo               |
+| :------------------------------------------: | :-----------------------------------------------: |
+| ![Home Screen](.github\screenshots\Home.png) | ![Admin Dashboard](.github\screenshots\Admin.png) |
+|      _Consulta de Status e Ganhadores_       |         _Gestão de Sorteios e Auditoria_          |
+
+---
+
+## 🏗️ Arquitetura
+
+O sistema opera em containers Docker, garantindo isolamento e fácil deploy.
 
 ```mermaid
 graph TD
-    subgraph Client [Ambiente do Cliente]
-        User((👤 Usuário))
-        Vue[📱 Frontend Vue.js]
+    subgraph External [Mundo Externo]
+        User((👤 Cliente))
+        Admin((🛡️ Admin))
+        Payment gateway((💰 Lastlink/Make))
     end
 
-    subgraph Containers [Docker Infrastructure]
-        style Containers fill:#f4f4f4,stroke:#333,stroke-width:2px
-
-        Nginx[🛡️ Nginx Gateway]
-        Node[⚙️ Backend Node.js/Express]
-        Postgres[(🗄️ Database PostgreSQL)]
+    subgraph Docker [Infraestrutura Docker]
+        Frontend[📱 Vue 3 + Tailwind (Vite)]
+        Backend[⚙️ Node.js API]
+        DB[(🗄️ PostgreSQL)]
     end
 
-    User -->|Interage| Vue
-    Vue -->|HTTPS /api| Nginx
-    Nginx -->|Proxy Pass| Node
-    Node -->|Query / Transaction| Postgres
-    Postgres -->|Data Set| Node
-    Node -->|JSON Response| Nginx
-    Nginx -->|Response| Vue
-
-
+    User -->|Consulta Status| Frontend
+    Admin -->|Realiza Sorteio| Frontend
+    Payment gateway -->|Webhook de Pagamento| Backend
+    Frontend -->|HTTP Requests| Backend
+    Backend -->|Persistência| DB
 ```
 
-⚡ Tecnologias
+⚡ Tech Stack
+Frontend (Client)
+Framework: Vue.js 3 (Composition API + Script Setup)
 
-O projeto utiliza uma stack moderna e robusta:
+Estilização: Tailwind CSS (Design System "Forest Green")
 
-Vue 3 - Framework reativo com Composition API.
+Build Tool: Vite
 
-Node.js - Runtime JavaScript de alta performance.
+Feedback: SweetAlert2
 
-Express - Framework web minimalista para APIs.
+HTTP Client: Axios
 
-PostgreSQL - Banco de dados relacional robusto.
+Backend (Server)
+Runtime: Node.js
 
-Docker - Containerização e orquestração de ambiente.
+Framework: Express.js
 
-🚀 Como Rodar em 3 Passos (Quickstart)
+Banco de Dados: PostgreSQL
 
-Siga este guia para ter o sistema rodando localmente em menos de 5 minutos.
+Segurança: JWT Auth & Webhook Signature Verification (crypto)
 
-1. Clonar o Repositório
-   Baixe o código fonte para sua máquina.
-   git clone [https://github.com/sua-org/sistema-sorteios.git](https://github.com/sua-org/sistema-sorteios.git)
-   cd sistema-sorteios
+Integração: Webhook Receiver (Lastlink/Hotmart compatible)
 
-2. Configurar Ambiente (.env)
-   Duplique o arquivo de exemplo para definir as variáveis de ambiente (DB, Portas, Secrets).
+🚀 Como Rodar Localmente
 
-# Linux / Mac
+Pré-requisitos
+Docker & Docker Compose instalados.
 
-cp .env.example .env
+1. Clonar e Configurar
 
-# Windows (Powershell)
+git clone [https://github.com/seu-usuario/sistema-sorteios.git](https://github.com/seu-usuario/sistema-sorteios.git)
+cd sistema-sorteios
 
-copy .env.example .env
+2. Acessar
 
-3. Subir com Docker
-   Inicie todos os serviços (Banco, API e Frontend) com um único comando.
-   docker-compose up --build -d
+   Frontend (Público & Admin): http://localhost:5173
 
-   Pronto! O sistema estará acessível em:
+   API (Backend): http://localhost:3000
 
-Frontend: http://localhost:8080
+🌟 Funcionalidades Principais
 
-API: http://localhost:3000
+🔓 Área Pública
 
-Docs (Swagger): http://localhost:3000/docs
+Verificação de Status: Usuário digita o e-mail e verifica se a assinatura está ativa (Integrado ao DB).
 
-📂 Estrutura do Projeto
+Galeria de Ganhadores: Exibição automática dos últimos sorteados.
 
-sistema-sorteios/
-├── backend/ # API, Models, Services e Configs
-├── frontend/ # Vue App, Components, Views
-├── nginx/ # Configurações do Proxy Reverso
-├── docker-compose.yml # Orquestração dos serviços
-└── .env.example # Template de variáveis
+CTA de Vendas: Link direto para o checkout da assinatura.
 
-📝 Documentação Adicional
-Para detalhes específicos de implementação, consulte os arquivos README.md dentro de cada pasta:
+🔒 Painel Administrativo
 
-backend/ # Documentação da API
-frontend/ # Documentação do Frontend
+Login Seguro: Autenticação via Token JWT.
+
+Sorteio Manual Auditável: Algoritmo que seleciona aleatoriamente um assinante active do banco de dados.
+
+Auditoria: Histórico completo de sorteios com opção de mascarar dados sensíveis (LGPD Friendly).
+
+Gestão de Participantes: Adição manual de participantes para testes ou cortesias.
+
+🤖 Automação (Webhooks)
+
+O sistema possui um endpoint /webhooks/lastlink preparado para receber notificações de pagamento.
+
+Lógica: Pagamento Aprovado (paid) -> Cria usuário ou Renova assinatura por 365 dias automaticamente.
