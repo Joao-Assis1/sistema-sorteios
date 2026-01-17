@@ -5,13 +5,29 @@ dotenv.config();
 
 const { Pool } = pg;
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASS,
-  port: process.env.DB_PORT,
-});
+// Verifica se estamos em produção (Render) ou local
+// O Render define automaticamente a variável DATABASE_URL
+const isProduction =
+  process.env.NODE_ENV === "production" || process.env.DATABASE_URL;
+
+const connectionConfig = isProduction
+  ? {
+      // PRODUÇÃO (Render): Usa a URL completa e ativa SSL
+      connectionString: process.env.DATABASE_URL,
+      ssl: {
+        rejectUnauthorized: false, // Necessário para aceitar o certificado do Render/Neon
+      },
+    }
+  : {
+      // LOCAL (Docker/PC): Usa as variáveis separadas do .env
+      user: process.env.DB_USER,
+      host: process.env.DB_HOST,
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASS,
+      port: process.env.DB_PORT,
+    };
+
+const pool = new Pool(connectionConfig);
 
 pool.on("error", (err) => {
   console.error("Unexpected error on idle client", err);
