@@ -67,7 +67,8 @@ A robust full-stack application for managing and displaying raffles, featuring a
 
 2. **Environment Setup**
    The project is configured to run out-of-the-box with Docker.
-   - Check `docker-compose.yml` for default database credentials.
+   - Copy the example environment file: `cp .env.example .env`
+   - **Important**: Update `.env` with strong passwords for production.
    - Ensure port `3000` (API), `5173` (Frontend), and `5433` (Database) are free.
 
 3. **Run with Docker**
