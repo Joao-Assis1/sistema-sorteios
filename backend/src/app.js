@@ -1,5 +1,6 @@
 import express from "express";
 import apiRoutes from "./routes/api.routes.js";
+import drawRoutes from "./routes/drawRoutes.js";
 import cors from "cors";
 import { globalErrorHandler } from "./middlewares/errorHandler.js";
 
@@ -10,6 +11,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
 app.use("/api/v1", apiRoutes);
+app.use("/admin", drawRoutes);
 
 // 404 Handler
 app.use((req, res, next) => {

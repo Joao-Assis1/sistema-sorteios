@@ -1,7 +1,7 @@
 import * as db from "../config/database.js";
 
 class UserRepository {
-  async create({ name, email, passwordHash, role = "user" }) {
+  async create({ name, email, passwordHash, role = "customer" }) {
     const query = `
       INSERT INTO users (name, email, password_hash, role)
       VALUES ($1, $2, $3, $4)
