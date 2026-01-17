@@ -1,111 +1,107 @@
-# 🎟️ Sistema de Sorteios & Assinaturas (SaaS)
+# Sistema de Sorteios
 
-![Version](https://img.shields.io/badge/version-2.0.0-blue.svg)
-![Vue.js](https://img.shields.io/badge/vue-3.x-green.svg)
-![Tailwind](https://img.shields.io/badge/style-tailwind-38bdf8.svg)
-![Node.js](https://img.shields.io/badge/node-18.x-green.svg)
+A robust full-stack application for managing and displaying raffles, featuring a modern public interface for participants and a comprehensive dashboard for administrators.
 
-> **Plataforma Full Stack para gestão de assinaturas e sorteios automatizados.**
+## 🚀 Features
 
-Este projeto é um Monorepo containerizado que gerencia um clube de assinaturas. Usuários ativos concorrem automaticamente a prêmios diários. O sistema conta com integração via Webhooks de pagamento, painel administrativo seguro e interface pública responsiva.
+### Public View
 
----
+- **Raffle Listing**: Browsable gallery of active and completed raffles.
+- **Winner Visualization**: Dedicated section to showcase raffle winners.
+- **No User Accounts**: Streamlined experience for participants without the need for registration.
 
-## 📸 Showcase
+## 📸 Screenshots
 
-|             Landing Page Pública             |                   Painel Administrativo                    |
-| :------------------------------------------: | :--------------------------------------------------------: |
-| ![Home Screen](.github\screenshots\Home.png) | ![Admin Dashboard](.github\screenshots\AdminDashboard.png) |
-|      _Consulta de Status e Ganhadores_       |              _Gestão de Sorteios e Auditoria_              |
+|              Public Home              |                   Admin Dashboard                    |
+| :-----------------------------------: | :--------------------------------------------------: |
+| ![Home](.github/screenshots/Home.png) | ![Dashboard](.github/screenshots/AdminDashboard.png) |
 
----
+<p align="center">
+  <img src=".github/screenshots/Login.png" alt="Admin Login" width="400" />
+  <br>
+  <em>Admin Login</em>
+</p>
 
-## 🏗️ Arquitetura
+### Admin Dashboard (Restricted)
 
-O sistema opera em containers Docker, garantindo isolamento e fácil deploy.
+- **Raffle Management**: Full CRUD capabilities for creating and editing raffles.
+- **Manual Draw (AdminDraw)**: Integrated tool to perform random draws for raffles.
+- **Webhook Integration**: Support for external payment/status updates via Lastlink webhooks.
+- **Secure Access**: Protected routes and authentication for administrative actions.
 
-```mermaid
-graph TD
-    subgraph External [Mundo Externo]
-        UserClient((👤 Cliente))
-        AdminUser((🛡️ Admin))
-        PaymentGateway((💰 Lastlink/Make))
-    end
+## 🛠 Tech Stack
 
-    subgraph Docker [Infraestrutura Docker]
-        Frontend[📱 Vue 3 + Tailwind (Vite)]
-        Backend[⚙️ Node.js API]
-        DB[(🗄️ PostgreSQL)]
-    end
+### Frontend
 
-    UserClient -->|Consulta Status| Frontend
-    AdminUser -->|Realiza Sorteio| Frontend
-    PaymentGateway -->|Webhook de Pagamento| Backend
-    Frontend -->|HTTP Requests| Backend
-    Backend -->|Persistência| DB
+- **Framework**: Vue 3 (Composition API)
+- **Styling**: Tailwind CSS
+- **Build Tool**: Vite
+- **State Management**: Pinia (implied)
 
-⚡ Tech Stack
-Frontend (Client)
-Framework: Vue.js 3 (Composition API + Script Setup)
+### Backend
 
-Estilização: Tailwind CSS (Design System "Forest Green")
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Database**: PostgreSQL
+- **ORM/Query**: `pg` (node-postgres)
 
-Build Tool: Vite
+### Infrastructure
 
-Feedback: SweetAlert2
+- **Containerization**: Docker & Docker Compose
 
-HTTP Client: Axios
+## 📦 Getting Started
 
-Backend (Server)
-Runtime: Node.js
+### Prerequisites
 
-Framework: Express.js
+- [Git](https://git-scm.com/)
+- [Docker](https://www.docker.com/) & Docker Compose
 
-Banco de Dados: PostgreSQL
+### Installation
 
-Segurança: JWT Auth & Webhook Signature Verification (crypto)
+1. **Clone the repository**
 
-Integração: Webhook Receiver (Lastlink/Hotmart compatible)
+   ```bash
+   git clone https://github.com/Joao-Assis1/sistema-sorteios.git
+   cd sistema-sorteios
+   ```
 
-🚀 Como Rodar Localmente
+2. **Environment Setup**
+   The project is configured to run out-of-the-box with Docker.
+   - Check `docker-compose.yml` for default database credentials.
+   - Ensure port `3000` (API), `5173` (Frontend), and `5433` (Database) are free.
 
-Pré-requisitos
-Docker & Docker Compose instalados.
+3. **Run with Docker**
+   Build and start the containers:
 
-1. Clonar e Configurar
+   ```bash
+   docker-compose up --build
+   ```
 
-git clone [https://github.com/seu-usuario/sistema-sorteios.git](https://github.com/seu-usuario/sistema-sorteios.git)
-cd sistema-sorteios
+4. **Access the Application**
+   - **Frontend (Public)**: [http://localhost:5173](http://localhost:5173)
+   - **Admin Login**: [http://localhost:5173/admin/login](http://localhost:5173/admin/login)
+   - **API Documentation**: [http://localhost:3000](http://localhost:3000)
 
-2. Acessar
+## 📂 Project Structure
 
-   Frontend (Público & Admin): http://localhost:5173
-
-   API (Backend): http://localhost:3000
-
-🌟 Funcionalidades Principais
-
-🔓 Área Pública
-
-Verificação de Status: Usuário digita o e-mail e verifica se a assinatura está ativa (Integrado ao DB).
-
-Galeria de Ganhadores: Exibição automática dos últimos sorteados.
-
-CTA de Vendas: Link direto para o checkout da assinatura.
-
-🔒 Painel Administrativo
-
-Login Seguro: Autenticação via Token JWT.
-
-Sorteio Manual Auditável: Algoritmo que seleciona aleatoriamente um assinante active do banco de dados.
-
-Auditoria: Histórico completo de sorteios com opção de mascarar dados sensíveis (LGPD Friendly).
-
-Gestão de Participantes: Adição manual de participantes para testes ou cortesias.
-
-🤖 Automação (Webhooks)
-
-O sistema possui um endpoint /webhooks/lastlink preparado para receber notificações de pagamento.
-
-Lógica: Pagamento Aprovado (paid) -> Cria usuário ou Renova assinatura por 365 dias automaticamente.
 ```
+sistema-sorteios/
+├── backend/            # Node.js Express API
+│   ├── src/
+│   │   ├── controllers/
+│   │   ├── services/
+│   │   └── routes/
+│   └── Dockerfile
+├── frontend/           # Vue 3 Application
+│   ├── sistema-sorteios-front/
+│   │   ├── src/        # Views, Components, Assets
+│   │   └── Dockerfile
+├── database/           # SQL scripts and Init files
+└── docker-compose.yml  # Container orchestration
+```
+
+## 🔌 Main API Endpoints
+
+- **Auth**: `/auth/login`
+- **Public**: `/public/raffles`, `/public/winners`
+- **Admin**: `/api/raffles`, `/api/draw`, `/api/webhooks`
