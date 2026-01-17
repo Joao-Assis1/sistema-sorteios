@@ -6,6 +6,7 @@ import apiRoutes from "./routes/api.routes.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
 import drawRoutes from "./routes/drawRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
+import dns from "node:dns";
 
 dotenv.config();
 console.log("DB Config:", {
@@ -19,6 +20,11 @@ import { dbPool as pool } from "./config/database.js";
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Força o Node.js a usar IPv4 (resolve o erro ENETUNREACH no Render)
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder("ipv4first");
+}
 
 // Middleware
 app.use(cors());
