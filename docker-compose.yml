@@ -6,13 +6,31 @@ services:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: "123456"
       POSTGRES_DB: sorteios_db
-    ports:
-      - "5433:5432"
+    # Security: No external port exposure - only accessible via internal Docker network
+    # Uncomment for development debugging only:
+    # ports:
+    #   - "5433:5432"
     volumes:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - postgres_data:/var/lib/postgresql/data
     networks:
       - sorteios-network
+    # Resource limits to prevent DoS
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.25"
+          memory: 256M
+    # Healthcheck to ensure database is ready before backend connects
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d sorteios_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   backend:
     build:
@@ -25,13 +43,14 @@ services:
       - /usr/src/app/node_modules
     environment:
       - DB_HOST=postgres
-      - DB_USER=user
-      - DB_PASS=123456
+      - DB_USER=app_user
+      - DB_PASS=app_secure_password_2024
       - DB_NAME=sorteios_db
       - DB_PORT=5432
       - PORT=3000
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     command: npm run dev
     networks:
       - sorteios-network

@@ -83,3 +83,27 @@ CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_tickets_raffle_id ON tickets(raffle_id);
 CREATE INDEX idx_tickets_user_id ON tickets(user_id);
 CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
+
+-- ============================================
+-- SECURITY: Restricted Application User
+-- ============================================
+-- Create a user with limited privileges for the application
+-- This user can only perform CRUD operations, not DDL (DROP, TRUNCATE, ALTER)
+
+CREATE USER app_user WITH PASSWORD 'app_secure_password_2024';
+
+-- Grant connection to database
+GRANT CONNECT ON DATABASE sorteios_db TO app_user;
+
+-- Grant usage on public schema
+GRANT USAGE ON SCHEMA public TO app_user;
+
+-- Grant CRUD only (no DDL like DROP, TRUNCATE, ALTER)
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_user;
+
+-- Grant sequence usage for UUIDs and auto-increment
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_user;
+
+-- Apply to future tables automatically (when superuser creates new tables)
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO app_user;
