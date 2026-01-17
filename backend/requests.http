@@ -1,0 +1,62 @@
+### Teste de Cadastro de Usuário
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "name": "Primeiro Usuario",
+  "email": "teste@email.com",
+  "password": "senhaSegura123"
+}
+
+### ==========================================
+### 1. AUTENTICAÇÃO
+### ==========================================
+
+### 1.1 Registrar Usuário (Admin/Criador)
+POST http://localhost:3000/auth/register
+Content-Type: application/json
+
+{
+  "name": "Admin da Rifa",
+  "email": "admin@teste.com",
+  "password": "123"
+}
+
+### 1.2 Login (PARA PEGAR O ID E O TOKEN)
+# Ao rodar este request, copie o "token" e o "id" que retornarem no JSON!
+# Você vai precisar do "id" para comprar o bilhete depois.
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@teste.com",
+  "password": "123"
+}
+
+
+### ==========================================
+### 2. WEBHOOKS (Simulação Lastlink/Make)
+### ==========================================
+
+### 2.1 Simular Pagamento Aprovado
+POST http://localhost:3000/webhooks/lastlink
+Content-Type: application/json
+x-webhook-secret: COLE_SUA_CHAVE_HEXADECIMAL_AQUI
+
+{
+  "email": "cliente.novo@email.com",
+  "nome": "Cliente Pagante",
+  "lastlink_id": "sub_123456",
+  "status": "paid"
+}
+
+### ========================================== 
+### 3. ADMIN (Sorteio Manual) 
+### ========================================== 
+
+POST http://localhost:3000/admin/draw
+Content-Type: application/json
+
+{
+  "prize": "Camisa Oficial do Flamengo - Temporada 2026"
+}

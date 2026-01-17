@@ -1,12 +1,19 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-
 import authRoutes from "./routes/authRoutes.js";
-import raffleRoutes from "./routes/raffleRoutes.js";
-import ticketRoutes from "./routes/ticketRoutes.js";
+import apiRoutes from "./routes/api.routes.js";
+import webhookRoutes from "./routes/webhookRoutes.js";
+import drawRoutes from "./routes/drawRoutes.js";
+import publicRoutes from "./routes/publicRoutes.js";
 
 dotenv.config();
+console.log("DB Config:", {
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  db: process.env.DB_NAME,
+  port: process.env.DB_PORT,
+});
 
 import { dbPool as pool } from "./config/database.js";
 
@@ -19,8 +26,10 @@ app.use(express.json());
 
 // Routes
 app.use("/auth", authRoutes);
-app.use("/raffles", raffleRoutes);
-app.use("/tickets", ticketRoutes);
+app.use("/api", apiRoutes);
+app.use("/webhooks", webhookRoutes);
+app.use("/admin", drawRoutes);
+app.use("/public", publicRoutes);
 
 // Health Check
 app.get("/health", async (req, res) => {
