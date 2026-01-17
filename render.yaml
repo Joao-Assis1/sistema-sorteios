@@ -1,0 +1,44 @@
+services:
+  # 1. O Backend (API)
+  - type: web
+    name: sistema-sorteios-api
+    runtime: node
+    repo: https://github.com/Joao-Assis1/sistema-sorteios
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: sorteios-db
+          property: connectionString
+      - key: WEBHOOK_SECRET
+        generateValue: true # Gera uma senha segura auto
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: sistema-sorteios-front
+          envVarKey: RENDER_EXTERNAL_URL # Pega a URL https://... do front
+
+  # 2. O Frontend (Site Vue.js)
+  - type: web
+    name: sistema-sorteios-front
+    runtime: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: sistema-sorteios-api
+          envVarKey: RENDER_EXTERNAL_URL # Injeta a URL da API no front
+
+databases:
+  # 3. O Banco de Dados (PostgreSQL Gerenciado)
+  - name: sorteios-db
+    databaseName: sorteios
+    user: sorteios_user
+    plan: free # Mude para 'starter' ($7/mês) quando for lançar pra valer
