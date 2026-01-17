@@ -27,9 +27,9 @@ O sistema opera em containers Docker, garantindo isolamento e fácil deploy.
 ```mermaid
 graph TD
     subgraph External [Mundo Externo]
-        User((👤 Cliente))
-        Admin((🛡️ Admin))
-        Payment gateway((💰 Lastlink/Make))
+        UserClient((👤 Cliente))
+        AdminUser((🛡️ Admin))
+        PaymentGateway((💰 Lastlink/Make))
     end
 
     subgraph Docker [Infraestrutura Docker]
@@ -38,12 +38,11 @@ graph TD
         DB[(🗄️ PostgreSQL)]
     end
 
-    User -->|Consulta Status| Frontend
-    Admin -->|Realiza Sorteio| Frontend
-    Payment gateway -->|Webhook de Pagamento| Backend
+    UserClient -->|Consulta Status| Frontend
+    AdminUser -->|Realiza Sorteio| Frontend
+    PaymentGateway -->|Webhook de Pagamento| Backend
     Frontend -->|HTTP Requests| Backend
     Backend -->|Persistência| DB
-```
 
 ⚡ Tech Stack
 Frontend (Client)
@@ -109,3 +108,4 @@ Gestão de Participantes: Adição manual de participantes para testes ou cortes
 O sistema possui um endpoint /webhooks/lastlink preparado para receber notificações de pagamento.
 
 Lógica: Pagamento Aprovado (paid) -> Cria usuário ou Renova assinatura por 365 dias automaticamente.
+```
