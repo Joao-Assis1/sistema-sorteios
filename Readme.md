@@ -13,10 +13,10 @@ Este projeto é um Monorepo containerizado que gerencia um clube de assinaturas.
 
 ## 📸 Showcase
 
-|             Landing Page Pública             |               Painel Administrativo               |
-| :------------------------------------------: | :-----------------------------------------------: |
-| ![Home Screen](.github\screenshots\Home.png) | ![Admin Dashboard](.github\screenshots\Admin.png) |
-|      _Consulta de Status e Ganhadores_       |         _Gestão de Sorteios e Auditoria_          |
+|             Landing Page Pública             |                   Painel Administrativo                    |
+| :------------------------------------------: | :--------------------------------------------------------: |
+| ![Home Screen](.github\screenshots\Home.png) | ![Admin Dashboard](.github\screenshots\AdminDashboard.png) |
+|      _Consulta de Status e Ganhadores_       |              _Gestão de Sorteios e Auditoria_              |
 
 ---
 

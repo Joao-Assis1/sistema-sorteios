@@ -17,3 +17,6 @@ Thumbs.db
 .vscode/
 .idea/
 .aiprompts/
+
+# Screenshots
+.github/screenshots/
