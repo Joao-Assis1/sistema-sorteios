@@ -4,10 +4,10 @@ services:
     container_name: sorteios-db
     environment:
       POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: "123456"
       POSTGRES_DB: sorteios_db
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - postgres_data:/var/lib/postgresql/data
@@ -26,7 +26,7 @@ services:
     environment:
       - DB_HOST=postgres
       - DB_USER=user
-      - DB_PASS=password
+      - DB_PASS=123456
       - DB_NAME=sorteios_db
       - DB_PORT=5432
       - PORT=3000
