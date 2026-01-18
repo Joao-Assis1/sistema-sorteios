@@ -97,12 +97,17 @@ const handleLogin = async () => {
     // Se deu certo, o usuário já está logado!
     console.log("Logado com sucesso:", data.user);
 
+    // Salva o token no localStorage para o guard de navegação
+    if (data.session?.access_token) {
+      localStorage.setItem("token", data.session.access_token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+    }
+
     // Redireciona para o dashboard
     router.push("/admin");
   } catch (error) {
     console.error("Login failed", error);
     alert("Erro ao entrar. Verifique suas credenciais.");
-    router.push("/login");
   } finally {
     loading.value = false;
   }

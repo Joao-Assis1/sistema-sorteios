@@ -6,12 +6,29 @@ import AdminDashboard from "../views/AdminDashboard.vue";
 const routes = [
   { path: "/", component: Home },
   { path: "/login", component: Login },
-  { path: "/admin", component: AdminDashboard }, // In a real app, should have auth guard
+  {
+    path: "/admin",
+    component: AdminDashboard,
+    meta: { requiresAuth: true },
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+});
+
+// Navigation Guard - Verifica autenticação antes de acessar rotas protegidas
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem("token");
+
+  if (to.meta.requiresAuth && !token) {
+    // Usuário não autenticado tentando acessar rota protegida
+    // Redireciona para a página inicial (Consulta de Participantes)
+    next("/");
+  } else {
+    next();
+  }
 });
 
 export default router;

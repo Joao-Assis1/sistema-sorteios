@@ -135,7 +135,7 @@
           <div>
             <p class="text-sm text-gray-500 font-medium">Último Sorteio</p>
             <p class="text-xl font-bold text-blue-600">
-              {{ stats?.last_draw_date ?? "Carregando..." }}
+              {{ loading ? "..." : stats.last_draw_date || "Nenhum" }}
             </p>
           </div>
         </div>
@@ -691,35 +691,22 @@ const toggleReveal = (index) => {
 // Functions
 const fetchDashboardData = async () => {
   try {
+    loading.value = true;
+    errorMessage.value = "";
+
+    // 1. Busca os dados
     const response = await api.get("/admin/dashboard-data");
-    console.log("Payload recebido:", response.data); // Log para debug
+    console.log("Dados brutos do backend:", response.data);
 
-    // Validação rigorosa: só atualiza se response.data for um objeto válido
-    if (response.data && typeof response.data === "object") {
-      // Atualiza stats apenas se existir e for objeto
-      if (response.data.stats && typeof response.data.stats === "object") {
-        stats.value = {
-          total_participants: response.data.stats.total_participants ?? 0,
-          total_draws: response.data.stats.total_draws ?? 0,
-          last_draw_date: response.data.stats.last_draw_date ?? "Nenhum",
-        };
-      } else {
-        console.warn("Stats não encontrado ou inválido na resposta");
-      }
-
-      participantsList.value = Array.isArray(response.data.participants)
-        ? response.data.participants
-        : [];
-
-      // Add isRevealed property to each history item
-      historyList.value = Array.isArray(response.data.history)
-        ? response.data.history.map((item) => ({
-            ...item,
-            isRevealed: false,
-          }))
-        : [];
-    } else {
-      console.warn("Resposta da API vazia ou inválida", response);
+    // 2. ATRIBUIÇÃO DIRETA (Sem IFs complexos)
+    // Se o backend retornou um objeto, usamos ele.
+    if (response.data) {
+      stats.value = {
+        total_participants: response.data.total_participants || 0,
+        active_participants: response.data.active_participants || 0,
+        total_draws: response.data.total_draws || 0,
+        last_draw_date: response.data.last_draw_date || "Nenhum",
+      };
     }
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
