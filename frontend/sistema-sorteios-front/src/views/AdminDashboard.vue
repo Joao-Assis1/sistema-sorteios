@@ -617,6 +617,8 @@ const currentTab = ref("participantes");
 const searchQuery = ref("");
 const loadingAdd = ref(false);
 const loadingDraw = ref(false);
+const loading = ref(false); // Estado de loading geral do dashboard
+const errorMessage = ref(""); // Mensagem de erro
 
 // Accordion states
 const accordionAddOpen = ref(false); // Closed by default
