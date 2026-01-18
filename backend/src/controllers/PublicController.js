@@ -61,7 +61,7 @@ class PublicController {
           h.premio,
           m.nome as winner_name
         FROM historico_sorteios h
-        LEFT JOIN lastlink_members m ON h.ganhador_id = m.id
+        LEFT JOIN lastlink_members m ON h.participante_id = m.id
         ORDER BY h.data_sorteio DESC
         LIMIT 3`,
       );

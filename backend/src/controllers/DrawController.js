@@ -43,7 +43,7 @@ class DrawController {
           m.nome as ganhador_nome, -- Pega o nome da tabela certa
           m.email as ganhador_email -- Opcional, se quiser mascarar no front
         FROM historico_sorteios h
-        LEFT JOIN lastlink_members m ON h.ganhador_id = m.id
+        LEFT JOIN lastlink_members m ON h.participante_id = m.id
         ORDER BY h.data_sorteio DESC
         LIMIT 20;
       `;
