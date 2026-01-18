@@ -1,6 +1,7 @@
 import { Router } from "express";
 import * as subController from "../controllers/subscriptionController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
+import DrawController from "../controllers/DrawController.js";
 
 const router = Router();
 
@@ -24,6 +25,7 @@ router.post(
   subController.createSubscription,
 );
 router.get("/usuario/status", subController.checkStatus);
+router.get("/public/winners", DrawController.getHistory);
 
 // ========================================
 // ROTAS PROTEGIDAS (Requer Supabase Auth)

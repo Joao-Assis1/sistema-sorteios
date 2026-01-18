@@ -30,6 +30,33 @@ class DrawController {
     }
   }
 
+  // GET /public/winners
+  async getHistory(req, res) {
+    try {
+      // O SEGREDO ESTÁ AQUI:
+      // Fazemos JOIN com 'lastlink_members' em vez de 'users'
+      const query = `
+        SELECT 
+          h.id, 
+          h.data_sorteio, 
+          h.premio, 
+          m.nome as ganhador_nome, -- Pega o nome da tabela certa
+          m.email as ganhador_email -- Opcional, se quiser mascarar no front
+        FROM historico_sorteios h
+        LEFT JOIN lastlink_members m ON h.ganhador_id = m.id
+        ORDER BY h.data_sorteio DESC
+        LIMIT 20;
+      `;
+
+      const result = await db.query(query);
+
+      return res.json(result.rows);
+    } catch (error) {
+      console.error("❌ Erro ao buscar histórico:", error);
+      return res.status(500).json({ error: "Erro ao carregar ganhadores." });
+    }
+  }
+
   // GET /admin/dashboard-data
   async getDashboardData(req, res) {
     try {
