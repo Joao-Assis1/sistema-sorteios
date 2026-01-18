@@ -146,6 +146,38 @@ class DrawController {
       return res.status(500).json({ error: "Erro ao adicionar participante." });
     }
   }
+
+  // GET /admin/members?search=query
+  async searchMembers(req, res) {
+    try {
+      const { search } = req.query;
+
+      if (!search || search.trim().length === 0) {
+        return res.json([]);
+      }
+
+      const searchPattern = `%${search.trim()}%`;
+
+      const result = await db.query(
+        `SELECT id, nome, email, telefone, status
+         FROM lastlink_members
+         WHERE status = 'active'
+           AND (
+             LOWER(nome) LIKE LOWER($1)
+             OR LOWER(email) LIKE LOWER($1)
+             OR telefone LIKE $1
+           )
+         ORDER BY nome ASC
+         LIMIT 50`,
+        [searchPattern],
+      );
+
+      return res.json(result.rows);
+    } catch (error) {
+      console.error("Search Members Error:", error);
+      return res.status(500).json({ error: "Erro ao buscar membros." });
+    }
+  }
 }
 
 export default new DrawController();

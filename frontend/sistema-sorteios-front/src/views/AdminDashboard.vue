@@ -605,7 +605,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import api from "../services/api";
 import Swal from "sweetalert2";
@@ -617,12 +617,14 @@ const currentTab = ref("participantes");
 const searchQuery = ref("");
 const loadingAdd = ref(false);
 const loadingDraw = ref(false);
-const loading = ref(false); // Estado de loading geral do dashboard
-const errorMessage = ref(""); // Mensagem de erro
+const loading = ref(false);
+const loadingSearch = ref(false);
+const loadingHistory = ref(false);
+const errorMessage = ref("");
 
 // Accordion states
-const accordionAddOpen = ref(false); // Closed by default
-const accordionDrawOpen = ref(true); // Open by default
+const accordionAddOpen = ref(false);
+const accordionDrawOpen = ref(true);
 
 const stats = ref({
   total_participants: 0,
@@ -630,7 +632,7 @@ const stats = ref({
   last_draw_date: "Carregando...",
 });
 
-const participantsList = ref([]);
+const participantsList = ref([]); // Resultados da pesquisa
 const historyList = ref([]);
 
 const newParticipant = ref({
@@ -643,16 +645,85 @@ const drawForm = ref({
   prize: "",
 });
 
-// Computed
-const filteredParticipants = computed(() => {
-  if (!searchQuery.value.trim()) return participantsList.value;
-  const query = searchQuery.value.toLowerCase();
-  return participantsList.value.filter(
-    (p) =>
-      p.name?.toLowerCase().includes(query) ||
-      p.email?.toLowerCase().includes(query) ||
-      p.phone?.toLowerCase().includes(query),
-  );
+// Debounce timer
+let searchTimeout = null;
+
+// ============================================
+// TAREFA 1: Pesquisa com Debounce
+// ============================================
+const searchParticipants = async (query) => {
+  if (!query.trim()) {
+    participantsList.value = [];
+    return;
+  }
+
+  loadingSearch.value = true;
+  try {
+    const response = await api.get(
+      `/admin/members?search=${encodeURIComponent(query)}`,
+    );
+    console.log("Resultados da busca:", response.data);
+
+    // Mapeia os dados retornados (backend usa 'nome' e 'telefone')
+    participantsList.value = (response.data || []).map((member) => ({
+      id: member.id,
+      name: member.nome || member.name,
+      email: member.email,
+      phone: member.telefone || member.phone || "-",
+    }));
+  } catch (error) {
+    console.error("Erro na busca:", error);
+    participantsList.value = [];
+  } finally {
+    loadingSearch.value = false;
+  }
+};
+
+// Watch searchQuery com debounce de 300ms
+watch(searchQuery, (newValue) => {
+  if (searchTimeout) clearTimeout(searchTimeout);
+
+  searchTimeout = setTimeout(() => {
+    searchParticipants(newValue);
+  }, 300);
+});
+
+// Computed para exibir resultados (agora vem direto do API)
+const filteredParticipants = computed(() => participantsList.value);
+
+// ============================================
+// TAREFA 3: Buscar Histórico ao trocar de aba
+// ============================================
+const fetchHistory = async () => {
+  loadingHistory.value = true;
+  try {
+    const response = await api.get("/api/v1/public/winners");
+    console.log("Histórico carregado:", response.data);
+
+    historyList.value = (response.data || []).map((item) => ({
+      id: item.id,
+      date: item.data_sorteio
+        ? new Date(item.data_sorteio).toLocaleDateString("pt-BR")
+        : "-",
+      prize: item.premio || "-",
+      winner: item.ganhador_nome || "N/A",
+      email: item.ganhador_email || "N/A",
+      phone: item.ganhador_telefone || "-",
+      isRevealed: false,
+    }));
+  } catch (error) {
+    console.error("Erro ao carregar histórico:", error);
+    historyList.value = [];
+  } finally {
+    loadingHistory.value = false;
+  }
+};
+
+// Watch para carregar histórico quando mudar para a aba
+watch(currentTab, (newTab) => {
+  if (newTab === "historico" && historyList.value.length === 0) {
+    fetchHistory();
+  }
 });
 
 // Mask functions for privacy
@@ -677,8 +748,7 @@ const maskEmail = (email) => {
 };
 
 const maskPhone = (phone) => {
-  if (!phone) return "-";
-  // Keep first 2 and last 2 digits visible
+  if (!phone || phone === "-") return "-";
   if (phone.length <= 4) return "****";
   const visible =
     phone.slice(0, 2) + "*".repeat(phone.length - 4) + phone.slice(-2);
@@ -690,34 +760,41 @@ const toggleReveal = (index) => {
   historyList.value[index].isRevealed = !historyList.value[index].isRevealed;
 };
 
-// Functions
+// ============================================
+// TAREFA 2: Fetch Dashboard Stats
+// ============================================
 const fetchDashboardData = async () => {
   try {
     loading.value = true;
     errorMessage.value = "";
 
-    // 1. Busca os dados
     const response = await api.get("/admin/dashboard-data");
     console.log("Dados brutos do backend:", response.data);
 
-    // 2. ATRIBUIÇÃO DIRETA (Sem IFs complexos)
-    // Se o backend retornou um objeto, usamos ele.
+    // O backend retorna { stats: {...}, participants: [...], history: [...] }
     if (response.data) {
+      // Se tiver objeto stats aninhado, usa ele; senão, usa direto
+      const statsData = response.data.stats || response.data;
+
       stats.value = {
-        total_participants: response.data.total_participants || 0,
-        active_participants: response.data.active_participants || 0,
-        total_draws: response.data.total_draws || 0,
-        last_draw_date: response.data.last_draw_date || "Nenhum",
+        total_participants: statsData.total_participants ?? 0,
+        total_draws: statsData.total_draws ?? 0,
+        last_draw_date: statsData.last_draw_date || "Nenhum",
       };
+
+      console.log("Stats atualizados:", stats.value);
     }
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
+    stats.value.last_draw_date = "Erro ao carregar";
     Swal.fire({
       icon: "error",
       title: "Erro",
       text: "Não foi possível carregar os dados do painel.",
       confirmButtonColor: "#22c55e",
     });
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -726,7 +803,6 @@ const handleAddParticipant = async () => {
   try {
     await api.post("/admin/participants", newParticipant.value);
 
-    // Success toast
     Swal.fire({
       toast: true,
       position: "top-end",
@@ -739,7 +815,6 @@ const handleAddParticipant = async () => {
       color: "#fff",
     });
 
-    // Clear form and refresh
     newParticipant.value = { name: "", email: "", phone: "" };
     await fetchDashboardData();
   } catch (error) {
@@ -775,14 +850,13 @@ const handleDraw = async () => {
     });
     const result = response.data.data;
 
-    // Success animation
     Swal.fire({
       icon: "success",
       title: "🎉 Temos um Ganhador!",
       html: `
         <div class="text-center">
           <p class="text-2xl font-bold text-green-700 mb-2">${
-            result.winner?.name || "Vencedor"
+            result.winner?.name || result.winner?.nome || "Vencedor"
           }</p>
           <p class="text-gray-500">${result.winner?.email || ""}</p>
           <p class="mt-4 text-lg">Prêmio: <strong class="text-yellow-600">${
@@ -801,9 +875,10 @@ const handleDraw = async () => {
       },
     });
 
-    // Clear form and refresh
     drawForm.value.prize = "";
     await fetchDashboardData();
+    // Limpa o histórico para forçar reload na próxima vez
+    historyList.value = [];
   } catch (error) {
     console.error("Error performing draw:", error);
     const errorMsg = error.response?.data?.error || "Erro ao realizar sorteio.";

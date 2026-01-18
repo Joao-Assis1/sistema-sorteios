@@ -17,4 +17,7 @@ router.get("/dashboard-data", authMiddleware, drawController.getDashboardData);
 // Add manual participant
 router.post("/participants", authMiddleware, drawController.addParticipant);
 
+// Search members
+router.get("/members", authMiddleware, drawController.searchMembers);
+
 export default router;
