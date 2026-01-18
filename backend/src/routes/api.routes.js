@@ -1,7 +1,6 @@
 import { Router } from "express";
 import * as subController from "../controllers/subscriptionController.js";
-import authController from "../controllers/authController.js";
-import { verifyToken } from "../middlewares/authMiddleware.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = Router();
 
@@ -16,16 +15,19 @@ const validateCadastro = (req, res, next) => {
   next();
 };
 
-// Rotas Públicas
+// ========================================
+// ROTAS PÚBLICAS (Sem autenticação)
+// ========================================
 router.post(
   "/webhook/cadastro",
   validateCadastro,
-  subController.createSubscription
+  subController.createSubscription,
 );
 router.get("/usuario/status", subController.checkStatus);
-router.post("/auth/login", authController.login);
 
-// Rotas Privadas (Admin)
-router.post("/admin/sortear", verifyToken, subController.runRaffle);
+// ========================================
+// ROTAS PROTEGIDAS (Requer Supabase Auth)
+// ========================================
+router.post("/admin/sortear", authMiddleware, subController.runRaffle);
 
 export default router;

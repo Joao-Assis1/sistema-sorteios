@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import authRoutes from "./routes/authRoutes.js";
 import apiRoutes from "./routes/api.routes.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
 import drawRoutes from "./routes/drawRoutes.js";
@@ -30,12 +29,17 @@ if (dns.setDefaultResultOrder) {
 app.use(cors());
 app.use(express.json());
 
-// Routes
-app.use("/auth", authRoutes);
+// ========================================
+// ROTAS PÚBLICAS (Sem autenticação)
+// ========================================
 app.use("/api", apiRoutes);
-app.use("/webhooks", webhookRoutes);
-app.use("/admin", drawRoutes);
+app.use("/webhooks", webhookRoutes); // Webhook Lastlink - PÚBLICO
 app.use("/public", publicRoutes);
+
+// ========================================
+// ROTAS ADMIN (Protegidas internamente via middleware)
+// ========================================
+app.use("/admin", drawRoutes);
 
 // Health Check
 app.get("/health", async (req, res) => {
