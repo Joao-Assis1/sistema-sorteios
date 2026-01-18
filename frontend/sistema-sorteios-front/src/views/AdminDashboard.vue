@@ -697,7 +697,7 @@ const filteredParticipants = computed(() => participantsList.value);
 const fetchHistory = async () => {
   loadingHistory.value = true;
   try {
-    const response = await api.get("/api/v1/public/winners");
+    const response = await api.get("/admin/history");
     console.log("Histórico carregado:", response.data);
 
     historyList.value = (response.data || []).map((item) => ({

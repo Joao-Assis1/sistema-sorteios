@@ -20,4 +20,10 @@ router.post("/participants", authMiddleware, drawController.addParticipant);
 // Search members
 router.get("/members", authMiddleware, drawController.searchMembers);
 
+// ========================================
+// ROTA PÚBLICA (Sem autenticação)
+// ========================================
+// GET /admin/history - Histórico de sorteios público
+router.get("/history", (req, res) => drawController.getHistory(req, res));
+
 export default router;
