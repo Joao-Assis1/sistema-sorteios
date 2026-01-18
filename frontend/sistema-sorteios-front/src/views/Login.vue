@@ -102,7 +102,7 @@ const handleLogin = async () => {
   } catch (error) {
     console.error("Login failed", error);
     alert("Erro ao entrar. Verifique suas credenciais.");
-    router.push("/admin");
+    router.push("/login");
   } finally {
     loading.value = false;
   }
