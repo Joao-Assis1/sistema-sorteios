@@ -4,6 +4,12 @@
     <header
       class="bg-[#154734] text-white px-6 py-4 flex justify-between items-center shadow-md"
     >
+      <button
+        @click="testarInvasao"
+        class="bg-red-600 text-white p-2 rounded mt-4"
+      >
+        💀 Testar Invasão
+      </button>
       <div class="flex items-center gap-3">
         <h1 class="text-xl font-bold tracking-wide">Painel de Sorteios</h1>
       </div>
@@ -600,12 +606,6 @@
           </table>
         </div>
       </div>
-      <button
-        @click="testarInvasao"
-        class="bg-red-600 text-white p-2 rounded mt-4"
-      >
-        💀 Testar Invasão
-      </button>
     </main>
   </div>
 </template>
