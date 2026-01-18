@@ -117,23 +117,23 @@ class DrawController {
           .json({ error: "Nome e email são obrigatórios." });
       }
 
-      // Check if user already exists
-      const existingUser = await pool.query(
-        `SELECT id FROM users WHERE email = $1`,
+      // Check if member already exists
+      const existingMember = await db.query(
+        `SELECT id FROM lastlink_members WHERE email = $1`,
         [email],
       );
 
-      if (existingUser.rows.length > 0) {
+      if (existingMember.rows.length > 0) {
         return res
           .status(409)
-          .json({ error: "Usuário com este email já existe." });
+          .json({ error: "Membro com este email já existe." });
       }
 
-      // Insert new participant with active status
-      const insertRes = await pool.query(
-        `INSERT INTO users (name, email, phone, subscription_status, role, created_at, updated_at)
-         VALUES ($1, $2, $3, 'active', 'customer', NOW(), NOW())
-         RETURNING id, name, email, phone, subscription_status, created_at`,
+      // Insert new member with active status
+      const insertRes = await db.query(
+        `INSERT INTO lastlink_members (nome, email, telefone, status)
+         VALUES ($1, $2, $3, 'active')
+         RETURNING id, nome, email, telefone, status`,
         [name, email, phone || null],
       );
 

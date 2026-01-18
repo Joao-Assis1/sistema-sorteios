@@ -1,4 +1,5 @@
 import { pool } from "../config/database.js";
+import * as db from "../config/database.js";
 
 class DrawService {
   async performManualDraw(prizeDescription) {
@@ -6,11 +7,11 @@ class DrawService {
     try {
       await client.query("BEGIN");
 
-      // 1. Buscar todos os assinantes ATIVOS
+      // 1. Buscar todos os membros ATIVOS
       const usersQuery = `
-        SELECT id, name, email 
-        FROM users 
-        WHERE subscription_status = 'active'
+        SELECT id, nome, email 
+        FROM lastlink_members 
+        WHERE status = 'active'
       `;
       const usersRes = await client.query(usersQuery);
       const activeUsers = usersRes.rows;
@@ -24,11 +25,11 @@ class DrawService {
       const randomIndex = Math.floor(Math.random() * activeUsers.length);
       const winner = activeUsers[randomIndex];
 
-      // 4. Salvar na tabela daily_draws
+      // 4. Salvar na tabela historico_sorteios
       const insertDrawQuery = `
-        INSERT INTO daily_draws (data_sorteio, premio_descricao, ganhador_user_id, status, created_at)
-        VALUES (NOW(), $1, $2, 'completed', NOW())
-        RETURNING id, data_sorteio, premio_descricao, status;
+        INSERT INTO historico_sorteios (data_sorteio, premio, participante_id)
+        VALUES (NOW(), $1, $2)
+        RETURNING id, data_sorteio, premio;
       `;
       const drawRes = await client.query(insertDrawQuery, [
         prizeDescription,
@@ -40,7 +41,7 @@ class DrawService {
 
       return {
         winner: {
-          name: winner.name,
+          name: winner.nome,
           email: winner.email,
         },
         total_participants: activeUsers.length,

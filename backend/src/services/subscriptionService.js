@@ -1,63 +1,43 @@
 import { pool, query } from "../config/database.js";
 
 class SubscriptionService {
+  /**
+   * Chamado pelo Webhook da Lastlink quando pagamento é confirmado.
+   * Atualiza ou cria o membro na tabela lastlink_members.
+   */
   async handlePaymentSuccess({ email, lastlinkId, nome }) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
 
-      // 1. Verificar se usuário existe
-      const userQuery = `SELECT id, email FROM users WHERE email = $1`;
-      const userRes = await client.query(userQuery, [email]);
-      let user = userRes.rows[0];
+      // 1. Verificar se membro já existe
+      const memberQuery = `SELECT id, email FROM lastlink_members WHERE email = $1`;
+      const memberRes = await client.query(memberQuery, [email]);
+      let member = memberRes.rows[0];
 
-      if (user) {
-        // 2. Se existe: Atualizar
+      if (member) {
+        // 2. Se existe: Atualizar para ativo
         const updateQuery = `
-          UPDATE users 
-          SET 
-            lastlink_id = $1,
-            subscription_status = 'active',
-            subscription_end_date = NOW() + INTERVAL '1 year',
-            updated_at = NOW()
-          WHERE id = $2
-          RETURNING id, email, subscription_status, subscription_end_date;
+          UPDATE lastlink_members 
+          SET status = 'active'
+          WHERE id = $1
+          RETURNING id, email, status;
         `;
-        const updateRes = await client.query(updateQuery, [
-          lastlinkId,
-          user.id,
-        ]);
-        user = updateRes.rows[0];
+        const updateRes = await client.query(updateQuery, [member.id]);
+        member = updateRes.rows[0];
       } else {
-        // 3. Se NÃO existe: Criar
-        // Gera uma senha aleatória simples (o ideal seria enviar por email, mas por enquanto vamos gerar)
-        const tempPassword = Math.random().toString(36).slice(-8);
-        // Em produção, você deve hashear essa senha.
-        // Como o AuthService usa bcrypt, precisaríamos importar aqui ou mover a lógica de criação para o UserRepository.
-        // Para simplificar e seguir o prompt, vou salvar um hash placeholder ou plain se o campo permitir (o campo é password_hash).
-        // IMPORTANTE: O prompt pediu para usar crypto ou string fixa.
-        // Vou assumir que o sistema espera um hash. Vou usar um hash 'dummy' válido ou importar bcrypt se necessário.
-        // Melhor opção: Criar usuário com status active.
-
+        // 3. Se NÃO existe: Criar novo membro
         const insertQuery = `
-          INSERT INTO users (name, email, lastlink_id, subscription_status, subscription_end_date, password_hash)
-          VALUES ($1, $2, $3, 'active', NOW() + INTERVAL '1 year', $4)
-          RETURNING id, email, subscription_status, subscription_end_date;
+          INSERT INTO lastlink_members (nome, email, status)
+          VALUES ($1, $2, 'active')
+          RETURNING id, email, status;
         `;
-        // Hash dummy para "mudar123" (apenas exemplo)
-        const dummyHash = "$2a$10$X7.G.6.G.6.G.6.G.6.G.6";
-
-        const insertRes = await client.query(insertQuery, [
-          nome,
-          email,
-          lastlinkId,
-          dummyHash,
-        ]);
-        user = insertRes.rows[0];
+        const insertRes = await client.query(insertQuery, [nome, email]);
+        member = insertRes.rows[0];
       }
 
       await client.query("COMMIT");
-      return user;
+      return member;
     } catch (error) {
       await client.query("ROLLBACK");
       throw error;
@@ -66,20 +46,22 @@ class SubscriptionService {
     }
   }
 
+  /**
+   * Executa sorteio entre membros ativos e registra no histórico.
+   */
   async executeRaffle(premioDescricao) {
     const sql = `
       WITH random_winner AS (
-          SELECT user_id
-          FROM subscriptions
-          WHERE status = 'ACTIVE' 
-            AND NOW() BETWEEN start_date AND end_date
+          SELECT id
+          FROM lastlink_members
+          WHERE status = 'active'
           ORDER BY RANDOM()
           LIMIT 1
       )
-      INSERT INTO raffles (title, description, winner_id, draw_date, status, price, total_numbers)
-      SELECT $1, $1, user_id, NOW(), 'closed', 0, 0
+      INSERT INTO historico_sorteios (data_sorteio, premio, participante_id)
+      SELECT NOW(), $1, id
       FROM random_winner
-      RETURNING id, winner_id, draw_date;
+      RETURNING id, participante_id, data_sorteio;
     `;
 
     const result = await query(sql, [premioDescricao]);
@@ -90,20 +72,66 @@ class SubscriptionService {
     return result.rows[0];
   }
 
+  /**
+   * Verifica se email está participando (ativo).
+   */
   async checkParticipation(email) {
     const sql = `
       SELECT 
-          u.name, 
+          nome, 
+          status,
           CASE 
-              WHEN s.status = 'ACTIVE' AND NOW() BETWEEN s.start_date AND s.end_date THEN true
+              WHEN status = 'active' THEN true
               ELSE false 
           END AS is_participating
-      FROM users u
-      LEFT JOIN subscriptions s ON u.id = s.user_id
-      WHERE u.email = $1;
+      FROM lastlink_members
+      WHERE email = $1;
     `;
     const result = await query(sql, [email]);
     return result.rows[0];
+  }
+
+  /**
+   * Registra usuário via webhook de cadastro.
+   */
+  async registerUserWithSubscription({ nome, email, lastlink_id }) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+
+      // Verifica se já existe
+      const existingQuery = `SELECT id FROM lastlink_members WHERE email = $1`;
+      const existingRes = await client.query(existingQuery, [email]);
+
+      if (existingRes.rows.length > 0) {
+        // Atualiza para ativo
+        const updateQuery = `
+          UPDATE lastlink_members 
+          SET status = 'active'
+          WHERE email = $1
+          RETURNING id, email, status;
+        `;
+        const updateRes = await client.query(updateQuery, [email]);
+        await client.query("COMMIT");
+        return updateRes.rows[0];
+      }
+
+      // Cria novo
+      const insertQuery = `
+        INSERT INTO lastlink_members (nome, email, status)
+        VALUES ($1, $2, 'active')
+        RETURNING id, email, status;
+      `;
+      const insertRes = await client.query(insertQuery, [nome, email]);
+
+      await client.query("COMMIT");
+      return insertRes.rows[0];
+    } catch (error) {
+      await client.query("ROLLBACK");
+      throw error;
+    } finally {
+      client.release();
+    }
   }
 }
 

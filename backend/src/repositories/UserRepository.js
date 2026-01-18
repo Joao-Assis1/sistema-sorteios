@@ -2,33 +2,26 @@ import * as db from "../config/database.js";
 
 class UserRepository {
   /**
-   * Busca usuário/membro por ID (para rotas protegidas)
+   * Busca membro por ID
    */
   async findById(id) {
     const query = `
-      SELECT m.*, r.role as role
-      FROM lastlink_members m
-      LEFT JOIN user_roles r ON m.id = r.user_id
-      WHERE m.id = $1
+      SELECT id, nome, email, telefone, status
+      FROM lastlink_members
+      WHERE id = $1
     `;
     const { rows } = await db.query(query, [id]);
     return rows[0];
   }
 
   /**
-   * Busca usuário/membro por email (usado pelo Supabase Auth)
+   * Busca membro por email
    */
   async findByEmail(email) {
     const query = `
-      SELECT 
-        m.id,
-        m.nome,
-        m.email,
-        m.status,
-        r.role as role
-      FROM lastlink_members m
-      LEFT JOIN user_roles r ON m.id = r.user_id
-      WHERE m.email = $1
+      SELECT id, nome, email, telefone, status
+      FROM lastlink_members
+      WHERE email = $1
     `;
     const { rows } = await db.query(query, [email]);
     return rows[0];
@@ -39,7 +32,7 @@ class UserRepository {
    */
   async findAllActive() {
     const query = `
-      SELECT id, nome, email, status
+      SELECT id, nome, email, telefone, status
       FROM lastlink_members
       WHERE status = 'active'
     `;
