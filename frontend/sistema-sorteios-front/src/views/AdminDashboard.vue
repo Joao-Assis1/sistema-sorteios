@@ -4,12 +4,6 @@
     <header
       class="bg-[#154734] text-white px-6 py-4 flex justify-between items-center shadow-md"
     >
-      <button
-        @click="testarInvasao"
-        class="bg-red-600 text-white p-2 rounded mt-4"
-      >
-        💀 Testar Invasão
-      </button>
       <div class="flex items-center gap-3">
         <h1 class="text-xl font-bold tracking-wide">Painel de Sorteios</h1>
       </div>
@@ -615,29 +609,6 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import api from "../services/api";
 import Swal from "sweetalert2";
-import { supabase } from "../services/supabase";
-
-// Função de Teste de Segurança
-const testarInvasao = async () => {
-  console.log("🕵️ Tentando inserir membro sem permissão...");
-
-  const { data, error } = await supabase.from("lastlink_members").insert([
-    {
-      id: "hacker-123",
-      nome: "Hacker Teste",
-      email: "hacker@teste.com",
-      status: "active",
-    },
-  ]);
-
-  if (error) {
-    console.error("⛔ SUCESSO! O Supabase bloqueou:", error.message);
-    alert("Segurança confirmada! O Supabase bloqueou a inserção.");
-  } else {
-    console.error("⚠️ PERIGO! A inserção funcionou. Revise suas Policies.");
-    alert("Cuidado! O membro foi inserido.");
-  }
-};
 
 const router = useRouter();
 
