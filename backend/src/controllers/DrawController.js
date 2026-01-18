@@ -1,6 +1,6 @@
 import drawService from "../services/DrawService.js";
 import { pool } from "../config/database.js";
-import db from "../database/index.js";
+import * as db from "../config/database.js";
 
 class DrawController {
   async createDraw(req, res) {
