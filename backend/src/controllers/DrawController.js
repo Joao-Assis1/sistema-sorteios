@@ -52,11 +52,26 @@ class DrawController {
       );
       const totalDraws = drawsQuery.rows[0].count;
 
+      // 4. ÚLTIMO SORTEIO (NOVO!) 🗓️
+      // Busca a data do registro mais recente
+      const lastDrawQuery = await db.query(
+        "SELECT data_sorteio FROM historico_sorteios ORDER BY data_sorteio DESC LIMIT 1",
+      );
+
+      let lastDrawDate = "Nenhum"; // Valor padrão se nunca teve sorteio
+
+      if (lastDrawQuery.rows.length > 0) {
+        // Formata a data para Dia/Mês/Ano (PT-BR)
+        const dataCrua = new Date(lastDrawQuery.rows[0].data_sorteio);
+        lastDrawDate = dataCrua.toLocaleDateString("pt-BR");
+      }
+
       // ✅ RETORNO EM INGLÊS (Para casar com o Frontend)
       return res.json({
         total_participants: Number(totalParticipants), // O Frontend espera exatamente isso
         active_participants: Number(activeParticipants), // Provavelmente espera isso também
         total_draws: Number(totalDraws), // E isso
+        last_draw_date: lastDrawDate,
       });
     } catch (error) {
       console.error("❌ Error fetching dashboard data:", error);
