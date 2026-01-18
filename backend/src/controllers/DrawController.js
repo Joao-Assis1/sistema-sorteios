@@ -33,34 +33,34 @@ class DrawController {
   // GET /admin/dashboard-data
   async getDashboardData(req, res) {
     try {
-      // 1. Total de Assinantes (Busca na tabela lastlink_members, não em users!)
-      const totalMembrosQuery = await db.query(
+      // 1. Total Participants (Total de Membros)
+      const totalQuery = await db.query(
         "SELECT COUNT(*) FROM lastlink_members",
       );
-      const totalMembros = totalMembrosQuery.rows[0].count;
+      const totalParticipants = totalQuery.rows[0].count;
 
-      // 2. Membros Ativos (Para saber quem pode participar)
-      const membrosAtivosQuery = await db.query(
+      // 2. Active Participants (Membros Ativos)
+      // Se você ainda não rodou o SQL da coluna 'status', remova o "WHERE status = 'active'"
+      const activeQuery = await db.query(
         "SELECT COUNT(*) FROM lastlink_members WHERE status = 'active'",
       );
-      const membrosAtivos = membrosAtivosQuery.rows[0].count;
+      const activeParticipants = activeQuery.rows[0].count;
 
-      // 3. Total de Sorteios Realizados
-      const totalSorteiosQuery = await db.query(
+      // 3. Total Draws (Total de Sorteios)
+      const drawsQuery = await db.query(
         "SELECT COUNT(*) FROM historico_sorteios",
       );
-      const totalSorteios = totalSorteiosQuery.rows[0].count;
+      const totalDraws = drawsQuery.rows[0].count;
 
-      // Retorna os dados limpos para o Frontend
+      // ✅ RETORNO EM INGLÊS (Para casar com o Frontend)
       return res.json({
-        totalMembros: Number(totalMembros),
-        membrosAtivos: Number(membrosAtivos),
-        totalSorteios: Number(totalSorteios),
+        total_participants: Number(totalParticipants), // O Frontend espera exatamente isso
+        active_participants: Number(activeParticipants), // Provavelmente espera isso também
+        total_draws: Number(totalDraws), // E isso
       });
     } catch (error) {
-      console.error("❌ Erro ao carregar Dashboard:", error);
-      // Retorna erro amigável para não quebrar o front
-      return res.status(500).json({ error: "Erro interno ao buscar dados." });
+      console.error("❌ Error fetching dashboard data:", error);
+      return res.status(500).json({ error: "Internal Server Error" });
     }
   }
 
