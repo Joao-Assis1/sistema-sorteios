@@ -79,7 +79,7 @@
               Total de Participantes
             </p>
             <p class="text-2xl font-bold text-green-700">
-              {{ stats.total_participants }}
+              {{ stats?.total_participants ?? 0 }}
             </p>
           </div>
         </div>
@@ -107,7 +107,7 @@
           <div>
             <p class="text-sm text-gray-500 font-medium">Total de Sorteios</p>
             <p class="text-2xl font-bold text-yellow-600">
-              {{ stats.total_draws }}
+              {{ stats?.total_draws ?? 0 }}
             </p>
           </div>
         </div>
@@ -135,7 +135,7 @@
           <div>
             <p class="text-sm text-gray-500 font-medium">Último Sorteio</p>
             <p class="text-xl font-bold text-blue-600">
-              {{ stats.last_draw_date }}
+              {{ stats?.last_draw_date ?? "Carregando..." }}
             </p>
           </div>
         </div>
@@ -625,7 +625,7 @@ const accordionDrawOpen = ref(true); // Open by default
 const stats = ref({
   total_participants: 0,
   total_draws: 0,
-  last_draw_date: "Nenhum",
+  last_draw_date: "Carregando...",
 });
 
 const participantsList = ref([]);
@@ -649,7 +649,7 @@ const filteredParticipants = computed(() => {
     (p) =>
       p.name?.toLowerCase().includes(query) ||
       p.email?.toLowerCase().includes(query) ||
-      p.phone?.toLowerCase().includes(query)
+      p.phone?.toLowerCase().includes(query),
   );
 });
 
@@ -692,14 +692,35 @@ const toggleReveal = (index) => {
 const fetchDashboardData = async () => {
   try {
     const response = await api.get("/admin/dashboard-data");
-    const data = response.data;
-    stats.value = data.stats;
-    participantsList.value = data.participants || [];
-    // Add isRevealed property to each history item
-    historyList.value = (data.history || []).map((item) => ({
-      ...item,
-      isRevealed: false,
-    }));
+    console.log("Payload recebido:", response.data); // Log para debug
+
+    // Validação rigorosa: só atualiza se response.data for um objeto válido
+    if (response.data && typeof response.data === "object") {
+      // Atualiza stats apenas se existir e for objeto
+      if (response.data.stats && typeof response.data.stats === "object") {
+        stats.value = {
+          total_participants: response.data.stats.total_participants ?? 0,
+          total_draws: response.data.stats.total_draws ?? 0,
+          last_draw_date: response.data.stats.last_draw_date ?? "Nenhum",
+        };
+      } else {
+        console.warn("Stats não encontrado ou inválido na resposta");
+      }
+
+      participantsList.value = Array.isArray(response.data.participants)
+        ? response.data.participants
+        : [];
+
+      // Add isRevealed property to each history item
+      historyList.value = Array.isArray(response.data.history)
+        ? response.data.history.map((item) => ({
+            ...item,
+            isRevealed: false,
+          }))
+        : [];
+    } else {
+      console.warn("Resposta da API vazia ou inválida", response);
+    }
   } catch (error) {
     console.error("Error fetching dashboard data:", error);
     Swal.fire({
