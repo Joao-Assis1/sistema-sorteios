@@ -1,7 +1,12 @@
 import pg from "pg";
 import dotenv from "dotenv";
+import dns from "node:dns";
 
 dotenv.config();
+
+if (dns.setDefaultResultOrder) {
+  dns.setDefaultResultOrder("ipv4first");
+}
 
 const { Pool } = pg;
 
@@ -28,6 +33,11 @@ const connectionConfig = isProduction
     };
 
 const pool = new Pool(connectionConfig);
+
+// Debug para sabermos se conectou
+pool.on("connect", () => {
+  console.log("✅ Conexão com Banco de Dados estabelecida!");
+});
 
 pool.on("error", (err) => {
   console.error("Unexpected error on idle client", err);
