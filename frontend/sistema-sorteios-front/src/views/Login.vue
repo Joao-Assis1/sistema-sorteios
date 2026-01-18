@@ -85,14 +85,20 @@ const loading = ref(false);
 const handleLogin = async () => {
   loading.value = true;
   try {
-    // Integration with API as requested: POST /auth/login
-    // Assuming API returns token or success
-    const response = await api.post("/auth/login", {
+    // A MÁGICA ACONTECE AQUI ✨
+    // Não chamamos mais o seu backend. Chamamos o Supabase direto.
+    const { data, error } = await supabase.auth.signInWithPassword({
       email: email.value,
       password: password.value,
     });
-    console.log("Login successful", response.data);
-    router.push("/admin");
+
+    if (error) throw error;
+
+    // Se deu certo, o usuário já está logado!
+    console.log("Logado com sucesso:", data.user);
+
+    // Redireciona para o dashboard
+    router.push("/dashboard");
   } catch (error) {
     console.error("Login failed", error);
     // For demo purposes, allow login if it fails (mock) or alert
