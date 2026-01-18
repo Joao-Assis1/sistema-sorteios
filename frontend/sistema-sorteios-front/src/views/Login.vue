@@ -98,13 +98,11 @@ const handleLogin = async () => {
     console.log("Logado com sucesso:", data.user);
 
     // Redireciona para o dashboard
-    router.push("/dashboard");
+    router.push("/admin");
   } catch (error) {
     console.error("Login failed", error);
-    // For demo purposes, allow login if it fails (mock) or alert
     alert("Erro ao entrar. Verifique suas credenciais.");
-    // To unblock testing without backend running:
-    // router.push('/admin');
+    router.push("/admin");
   } finally {
     loading.value = false;
   }
