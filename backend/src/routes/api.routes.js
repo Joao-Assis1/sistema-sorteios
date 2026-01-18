@@ -25,7 +25,9 @@ router.post(
   subController.createSubscription,
 );
 router.get("/usuario/status", subController.checkStatus);
-router.get("/public/winners", DrawController.getHistory);
+router.get("/public/winners", (req, res) =>
+  DrawController.getHistory(req, res),
+);
 
 // ========================================
 // ROTAS PROTEGIDAS (Requer Supabase Auth)
