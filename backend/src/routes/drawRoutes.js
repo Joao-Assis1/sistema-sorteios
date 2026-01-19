@@ -1,6 +1,7 @@
 import { Router } from "express";
 import drawController from "../controllers/DrawController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
+import WebhookController from "../controllers/WebhookController.js";
 
 const router = Router();
 
@@ -25,5 +26,10 @@ router.get("/members", authMiddleware, drawController.searchMembers);
 // ========================================
 // GET /admin/history - Histórico de sorteios público
 router.get("/history", (req, res) => drawController.getHistory(req, res));
+
+// POST /admin/webhook - Webhook Lastlink (pagamentos e cancelamentos)
+router.post("/webhook", (req, res) =>
+  WebhookController.handleLastlink(req, res),
+);
 
 export default router;
