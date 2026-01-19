@@ -53,68 +53,6 @@ class SubscriptionService {
     const sql = `UPDATE lastlink_members SET status = 'inactive', updated_at = NOW() WHERE email = $1`;
     await query(sql, [email]);
   }
-
-  /**
-   * Verifica se email está participando (ativo).
-   */
-  async checkParticipation(email) {
-    const sql = `
-      SELECT 
-          nome, 
-          status,
-          CASE 
-              WHEN status = 'active' THEN true
-              ELSE false 
-          END AS is_participating
-      FROM lastlink_members
-      WHERE email = $1;
-    `;
-    const result = await query(sql, [email]);
-    return result.rows[0];
-  }
-
-  /**
-   * Registra usuário via webhook de cadastro.
-   */
-  async registerUserWithSubscription({ nome, email, lastlink_id }) {
-    const client = await pool.connect();
-    try {
-      await client.query("BEGIN");
-
-      // Verifica se já existe
-      const existingQuery = `SELECT id FROM lastlink_members WHERE email = $1`;
-      const existingRes = await client.query(existingQuery, [email]);
-
-      if (existingRes.rows.length > 0) {
-        // Atualiza para ativo
-        const updateQuery = `
-          UPDATE lastlink_members 
-          SET status = 'active'
-          WHERE email = $1
-          RETURNING id, email, status;
-        `;
-        const updateRes = await client.query(updateQuery, [email]);
-        await client.query("COMMIT");
-        return updateRes.rows[0];
-      }
-
-      // Cria novo
-      const insertQuery = `
-        INSERT INTO lastlink_members (nome, email, status)
-        VALUES ($1, $2, 'active')
-        RETURNING id, email, status;
-      `;
-      const insertRes = await client.query(insertQuery, [nome, email]);
-
-      await client.query("COMMIT");
-      return insertRes.rows[0];
-    } catch (error) {
-      await client.query("ROLLBACK");
-      throw error;
-    } finally {
-      client.release();
-    }
-  }
 }
 
 export default new SubscriptionService();

@@ -1,6 +1,6 @@
 import express from "express";
-import apiRoutes from "./routes/api.routes.js";
 import drawRoutes from "./routes/drawRoutes.js";
+import webhookRoutes from "./routes/webhookRoutes.js";
 import cors from "cors";
 import { globalErrorHandler } from "./middlewares/errorHandler.js";
 
@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 
-app.use("/api/v1", apiRoutes);
+app.use("/api/webhook", webhookRoutes);
 app.use("/admin", drawRoutes);
 
 // 404 Handler

@@ -1,7 +1,6 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import apiRoutes from "./routes/api.routes.js";
 import webhookRoutes from "./routes/webhookRoutes.js";
 import drawRoutes from "./routes/drawRoutes.js";
 import publicRoutes from "./routes/publicRoutes.js";
@@ -32,7 +31,7 @@ app.use(express.json());
 // ========================================
 // ROTAS PÚBLICAS (Sem autenticação)
 // ========================================
-app.use("/api", apiRoutes);
+
 app.use("/webhooks", webhookRoutes); // Webhook Lastlink - PÚBLICO
 app.use("/public", publicRoutes);
 
