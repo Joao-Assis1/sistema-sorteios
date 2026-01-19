@@ -10,22 +10,30 @@ class WebhookController {
       }
 
       // 2. Extrair dados
-      const { email, lastlink_id, nome, status } = req.body;
+      const { email, nome, status } = req.body;
 
-      // 3. Processar apenas se pago
+      // 3. Processar pagamento confirmado
       if (status === "paid") {
         await subscriptionService.handlePaymentSuccess({
           email,
-          lastlinkId: lastlink_id,
           nome,
         });
         return res
           .status(200)
-          .json({ status: "success", message: "Processed" });
+          .json({ status: "success", message: "Payment processed" });
       }
 
-      // Se não for 'paid' (ex: 'pending', 'canceled'), apenas ignoramos ou logamos
-      // Retornar 200 para a Lastlink não ficar tentando reenviar
+      // 4. Processar cancelamentos (canceled, refunded, chargeback)
+      if (["canceled", "refunded", "chargeback"].includes(status)) {
+        await subscriptionService.deactivateUser(email);
+        console.log(`User ${email} deactivated due to status: ${status}`);
+        return res
+          .status(200)
+          .json({ status: "success", message: "User deactivated" });
+      }
+
+      // 5. Qualquer outro status: apenas logar e retornar 200 OK
+      console.log(`Webhook received with unhandled status: ${status}`);
       return res
         .status(200)
         .json({ status: "ignored", message: `Status ${status} ignored` });

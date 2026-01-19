@@ -6,21 +6,9 @@ export const createSubscription = async (req, res, next) => {
 
     const result = await subscriptionService.registerUserWithSubscription(
       { nome, email, telefone },
-      { lastlink_id, data_inicio: inicio, data_fim: fim }
+      { lastlink_id, data_inicio: inicio, data_fim: fim },
     );
     res.status(201).json({ status: "success", data: result });
-  } catch (error) {
-    next(error);
-  }
-};
-
-export const runRaffle = async (req, res, next) => {
-  try {
-    const { premio } = req.body;
-    if (!premio) throw new Error("Descrição do prêmio é obrigatória.");
-
-    const winner = await subscriptionService.executeRaffle(premio);
-    res.status(200).json({ status: "success", data: winner });
   } catch (error) {
     next(error);
   }

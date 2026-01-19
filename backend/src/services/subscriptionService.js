@@ -5,7 +5,7 @@ class SubscriptionService {
    * Chamado pelo Webhook da Lastlink quando pagamento é confirmado.
    * Atualiza ou cria o membro na tabela lastlink_members.
    */
-  async handlePaymentSuccess({ email, lastlinkId, nome }) {
+  async handlePaymentSuccess({ email, nome }) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
@@ -47,29 +47,11 @@ class SubscriptionService {
   }
 
   /**
-   * Executa sorteio entre membros ativos e registra no histórico.
+   * Desativa usuário quando assinatura é cancelada, reembolsada ou chargeback.
    */
-  async executeRaffle(premioDescricao) {
-    const sql = `
-      WITH random_winner AS (
-          SELECT id
-          FROM lastlink_members
-          WHERE status = 'active'
-          ORDER BY RANDOM()
-          LIMIT 1
-      )
-      INSERT INTO historico_sorteios (data_sorteio, premio, participante_id)
-      SELECT NOW(), $1, id
-      FROM random_winner
-      RETURNING id, participante_id, data_sorteio;
-    `;
-
-    const result = await query(sql, [premioDescricao]);
-
-    if (result.rows.length === 0) {
-      throw new Error("Nenhum participante elegível para o sorteio.");
-    }
-    return result.rows[0];
+  async deactivateUser(email) {
+    const sql = `UPDATE lastlink_members SET status = 'inactive', updated_at = NOW() WHERE email = $1`;
+    await query(sql, [email]);
   }
 
   /**

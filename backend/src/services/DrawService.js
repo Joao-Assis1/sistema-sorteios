@@ -1,5 +1,4 @@
 import { pool } from "../config/database.js";
-import * as db from "../config/database.js";
 
 class DrawService {
   async performManualDraw(prizeDescription) {
