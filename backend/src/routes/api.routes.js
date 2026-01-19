@@ -2,6 +2,7 @@ import { Router } from "express";
 import * as subController from "../controllers/subscriptionController.js";
 import { authMiddleware } from "../middlewares/authMiddleware.js";
 import DrawController from "../controllers/DrawController.js";
+import WebhookController from "../controllers/WebhookController.js";
 
 const router = Router();
 
@@ -24,6 +25,11 @@ router.post(
   validateCadastro,
   subController.createSubscription,
 );
+
+// Rota do Webhook Lastlink (pagamentos e cancelamentos)
+router.post("/webhook/lastlink", (req, res) =>
+  WebhookController.handleLastlink(req, res),
+);
 router.get("/usuario/status", subController.checkStatus);
 router.get("/public/winners", (req, res) =>
   DrawController.getHistory(req, res),
@@ -32,6 +38,25 @@ router.get("/public/winners", (req, res) =>
 // ========================================
 // ROTAS PROTEGIDAS (Requer Supabase Auth)
 // ========================================
-router.post("/admin/sortear", authMiddleware, subController.runRaffle);
+
+// Dashboard e dados administrativos
+router.get("/admin/dashboard", authMiddleware, (req, res) =>
+  DrawController.getDashboardData(req, res),
+);
+
+// Executar sorteio
+router.post("/admin/sortear", authMiddleware, (req, res) =>
+  DrawController.createDraw(req, res),
+);
+
+// Adicionar participante manualmente
+router.post("/admin/participants", authMiddleware, (req, res) =>
+  DrawController.addParticipant(req, res),
+);
+
+// Buscar membros (search)
+router.get("/admin/members", authMiddleware, (req, res) =>
+  DrawController.searchMembers(req, res),
+);
 
 export default router;
