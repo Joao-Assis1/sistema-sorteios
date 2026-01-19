@@ -6,7 +6,7 @@ const supabaseKey = "sb_publishable_CzPALNStOxmqZh7GXE5z2g_91G578V_";
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const api = axios.create({
-  baseURL: "https://sistema-sorteios.onrender.com",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001",
 });
 
 // O INTERCEPTADOR MÁGICO 🧙‍♂️
