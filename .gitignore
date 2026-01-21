@@ -20,3 +20,6 @@ Thumbs.db
 
 # Screenshots
 .github/screenshots/
+
+# Requests HTTP
+backend/requests.http
