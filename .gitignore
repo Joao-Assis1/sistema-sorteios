@@ -18,6 +18,7 @@ yarn-error.log
 id_rsa
 id_rsa.pub
 known_hosts
+frontend/sistema-sorteios-front/src/services/supabase.js
 
 # Docker
 docker/
