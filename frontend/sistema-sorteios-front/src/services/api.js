@@ -1,12 +1,5 @@
 import axios from "axios";
-import dotenv from "dotenv";
-import { createClient } from "@supabase/supabase-js";
-
-dotenv.config();
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+import { supabase } from "./supabase";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || "http://localhost:3001",
