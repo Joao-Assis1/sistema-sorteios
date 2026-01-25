@@ -182,6 +182,71 @@ class DrawController {
       return res.status(500).json({ error: "Erro ao buscar membros." });
     }
   }
+
+  /**
+   * GET /public/results
+   * Rota pública para auditoria de sorteios finalizados.
+   * Retorna todos os campos de transparência para verificação externa.
+   */
+  async getAuditResults(req, res) {
+    try {
+      const { limit = 20, offset = 0 } = req.query;
+
+      const query = `
+        SELECT 
+          h.id,
+          h.data_sorteio,
+          h.premio,
+          h.seed_value,
+          h.seed_source,
+          h.participants_count,
+          h.draw_hash,
+          m.nome as winner_name
+        FROM historico_sorteios h
+        LEFT JOIN lastlink_members m ON h.participante_id = m.id
+        WHERE h.participante_id IS NOT NULL
+        ORDER BY h.data_sorteio DESC
+        LIMIT $1 OFFSET $2;
+      `;
+
+      const result = await db.query(query, [
+        Math.min(Number(limit), 100), // Cap at 100 for security
+        Number(offset),
+      ]);
+
+      // Format response with full audit data
+      const draws = result.rows.map((row) => ({
+        id: row.id,
+        draw_date: row.data_sorteio,
+        prize: row.premio,
+        winner_first_name: row.winner_name
+          ? row.winner_name.split(" ")[0]
+          : "Ganhador",
+        audit: {
+          seed_value: row.seed_value,
+          seed_source: row.seed_source?.startsWith("http")
+            ? row.seed_source
+            : `https://${row.seed_source}`,
+          participants_count: row.participants_count,
+          draw_hash: row.draw_hash,
+          algorithm: "BigInt(0x + seed_value) % participants_count",
+          verification_note:
+            "Qualquer pessoa pode verificar este sorteio recalculando o hash SHA-256 com os dados acima.",
+        },
+      }));
+
+      return res.json({
+        status: "success",
+        count: draws.length,
+        data: draws,
+      });
+    } catch (error) {
+      console.error("❌ Erro ao buscar resultados de auditoria:", error);
+      return res
+        .status(500)
+        .json({ error: "Erro ao carregar resultados de auditoria." });
+    }
+  }
 }
 
 export default new DrawController();
