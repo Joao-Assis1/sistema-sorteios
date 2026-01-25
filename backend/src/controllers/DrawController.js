@@ -34,20 +34,18 @@ class DrawController {
     }
   }
 
-  // GET /admin/history - Histórico com dados de auditoria
+  // GET /public/winners
   async getHistory(req, res) {
     try {
-      // Busca histórico com dados de auditoria para transparência
+      // O SEGREDO ESTÁ AQUI:
+      // Fazemos JOIN com 'lastlink_members' em vez de 'users'
       const query = `
         SELECT 
           h.id, 
           h.data_sorteio, 
           h.premio, 
-          h.seed_value,
-          h.seed_source,
-          h.participants_count as total_participants,
-          m.nome as ganhador_nome,
-          m.email as ganhador_email
+          m.nome as ganhador_nome, -- Pega o nome da tabela certa
+          m.email as ganhador_email -- Opcional, se quiser mascarar no front
         FROM historico_sorteios h
         LEFT JOIN lastlink_members m ON h.participante_id = m.id
         ORDER BY h.data_sorteio DESC
