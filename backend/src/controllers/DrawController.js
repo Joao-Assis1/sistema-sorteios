@@ -16,7 +16,12 @@ class DrawController {
 
       return res.status(201).json({
         status: "success",
-        data: result,
+        data: {
+          winner: result.winner,
+          total_participants: result.total_participants,
+          draw_details: result.draw_details,
+        },
+        audit: result.audit_data,
       });
     } catch (error) {
       console.error("Draw Error:", error);
