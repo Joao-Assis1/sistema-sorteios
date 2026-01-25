@@ -1,6 +1,8 @@
 import { pool } from "../config/database.js";
 import axios from "axios";
 
+import { deterministicSelect } from "../utils/lotteryUtils.js";
+
 class DrawService {
   /**
    * Busca o hash do último bloco de Bitcoin na API Blockchain.info
@@ -19,24 +21,6 @@ class DrawService {
       console.error("❌ Erro ao buscar hash Bitcoin:", error.message);
       throw new Error("Falha ao obter hash do bloco Bitcoin para auditoria.");
     }
-  }
-
-  /**
-   * Seleção determinística baseada em seed (hash hexadecimal)
-   * @param {string} seedValue - Hash hexadecimal (ex: "0000...abc123")
-   * @param {Array} participants - Lista de participantes ordenada por ID
-   * @returns {{winner: object, index: number}}
-   */
-  deterministicSelect(seedValue, participants) {
-    // Converte hash hexadecimal para BigInt
-    const seed = BigInt("0x" + seedValue);
-    const total = BigInt(participants.length);
-    const winnerIndex = Number(seed % total);
-
-    return {
-      winner: participants[winnerIndex],
-      index: winnerIndex,
-    };
   }
 
   async performManualDraw(prizeDescription) {
@@ -63,7 +47,7 @@ class DrawService {
       }
 
       // 4. Sorteio DETERMINÍSTICO (substituindo Math.random)
-      const { winner, index } = this.deterministicSelect(
+      const { winner, index } = deterministicSelect(
         bitcoinData.hash,
         activeUsers,
       );
