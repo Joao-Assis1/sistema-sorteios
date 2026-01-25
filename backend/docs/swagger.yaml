@@ -1,175 +1,234 @@
 openapi: 3.0.0
 info:
   title: Sistema de Sorteios API
-  description: API responsável pela gestão de assinaturas, autenticação e realização de sorteios.
-  version: 1.0.0
+  description: |
+    API para gestão de sorteios determinísticos com auditoria blockchain.
+
+    **Autenticação:** Usa Supabase Auth JWT para rotas `/admin/*`
+
+    **Auditoria:** Todos os sorteios usam Bitcoin block hash como seed
+  version: 2.0.0
+  contact:
+    name: Sistema Sorteios
+
 servers:
-  - url: http://localhost:3000
-    description: Servidor Local (Docker)
+  - url: http://localhost:3001
+    description: Desenvolvimento (Docker)
+  - url: https://your-production-url.com
+    description: Produção
 
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: JWT (Supabase)
+      description: Token JWT obtido via Supabase Auth
 
   schemas:
     Error:
       type: object
       properties:
-        status:
-          type: string
-          example: "fail"
-        message:
+        error:
           type: string
           example: "Mensagem de erro descritiva"
-    
-    SubscriptionInput:
+
+    DrawRequest:
       type: object
       required:
-        - nome
-        - email
-        - lastlink_id
+        - prize
       properties:
-        nome:
+        prize:
           type: string
-          example: "João da Silva"
+          description: Descrição do prêmio do sorteio
+          example: "iPhone 15 Pro Max 256GB"
+
+    DrawResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: "success"
+        data:
+          type: object
+          properties:
+            winner:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "João Silva"
+                email:
+                  type: string
+                  example: "joao@example.com"
+            total_participants:
+              type: integer
+              example: 47
+            draw_details:
+              type: object
+              properties:
+                id:
+                  type: string
+                  format: uuid
+                  example: "4c58d482-089b-48e4-8dc1-bf0eb51b281d"
+                data_sorteio:
+                  type: string
+                  format: date-time
+                  example: "2026-01-25T21:12:25.000Z"
+                premio:
+                  type: string
+                  example: "iPhone 15 Pro Max 256GB"
+                seed_value:
+                  type: string
+                  description: Bitcoin block hash usado como seed
+                  example: "000000000000000000008ea5998b0b8e386a2ab41c5107f46c511179175e600f"
+                seed_source:
+                  type: string
+                  example: "blockchain.info/q/latesthash"
+                draw_hash:
+                  type: string
+                  description: SHA-256 hash para auditoria
+                  example: "096fc1ae71cd0a934791a57518df263497e294d1f8082f71e910299e390f998d"
+                participants_count:
+                  type: integer
+                  example: 47
+        audit:
+          type: object
+          description: Dados de auditoria do sorteio
+          properties:
+            seed_value:
+              type: string
+              example: "000000000000000000008ea5998b0b8e386a2ab41c5107f46c511179175e600f"
+            seed_source:
+              type: string
+              example: "blockchain.info/q/latesthash"
+            draw_hash:
+              type: string
+              example: "096fc1ae71cd0a934791a57518df263497e294d1f8082f71e910299e390f998d"
+            winner_index:
+              type: integer
+              description: Índice calculado deterministicamente
+              example: 23
+            total_participants:
+              type: integer
+              example: 47
+            algorithm:
+              type: string
+              example: "BigInt(0x + seed_value) % total_participants"
+
+    DashboardStats:
+      type: object
+      properties:
+        total_participants:
+          type: integer
+          example: 150
+        active_participants:
+          type: integer
+          example: 127
+        total_draws:
+          type: integer
+          example: 34
+        last_draw_date:
+          type: string
+          example: "25/01/2026"
+
+    ParticipantInput:
+      type: object
+      required:
+        - name
+        - email
+      properties:
+        name:
+          type: string
+          example: "Maria Santos"
         email:
           type: string
           format: email
-          example: "joao@email.com"
+          example: "maria@example.com"
+        phone:
+          type: string
+          example: "+5511999999999"
+
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+          example: "João Silva"
+        email:
+          type: string
+          example: "joao@example.com"
         telefone:
           type: string
-          example: "11999999999"
+          example: "+5511999999999"
+        status:
+          type: string
+          enum: [active, inactive]
+          example: "active"
+
+    HistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        data_sorteio:
+          type: string
+          format: date-time
+        premio:
+          type: string
+          example: "iPhone 15 Pro"
+        ganhador_nome:
+          type: string
+          example: "João Silva"
+        ganhador_email:
+          type: string
+          example: "joao@example.com"
+
+    WebhookPayload:
+      type: object
+      required:
+        - email
+        - nome
+        - status
+      properties:
+        email:
+          type: string
+          format: email
+        nome:
+          type: string
+        status:
+          type: string
+          enum: [paid, cancelled, refunded, chargeback]
+          description: Status do pagamento
         lastlink_id:
           type: string
-          description: ID da transação vindo do webhook
-          example: "tr_123456789"
-        inicio:
-          type: string
-          format: date-time
-          example: "2023-10-01T10:00:00Z"
-        fim:
-          type: string
-          format: date-time
-          example: "2023-11-01T10:00:00Z"
+          description: ID da transação Lastlink
 
 paths:
-  # -------------------------
-  # AUTENTICAÇÃO
-  # -------------------------
-  /auth/login:
-    post:
-      summary: Autenticação Administrativa
-      tags: [Auth]
-      description: Realiza login de administrador e retorna token JWT.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [email, senha]
-              properties:
-                email:
-                  type: string
-                  format: email
-                  example: "admin@sorteios.com"
-                senha:
-                  type: string
-                  format: password
-                  example: "123456"
-      responses:
-        "200":
-          description: Login realizado com sucesso
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "success"
-                  data:
-                    type: object
-                    properties:
-                      token:
-                        type: string
-                        example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-        "401":
-          description: Credenciais inválidas
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+  # ========================================
+  # ROTAS PÚBLICAS
+  # ========================================
 
-  # -------------------------
-  # ASSINATURAS (WEBHOOK)
-  # -------------------------
-  /webhook/cadastro:
-    post:
-      summary: Webhook de Cadastro de Assinatura
-      tags: [Subscription]
-      description: Rota pública chamada pelo sistema de pagamento (ex: Lastlink) para registrar um novo usuário e sua assinatura.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SubscriptionInput'
-      responses:
-        "201":
-          description: Assinatura criada com sucesso
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "success"
-                  data:
-                    type: object
-                    properties:
-                      id:
-                        type: integer
-                        example: 1
-                      usuario_id:
-                        type: integer
-                        example: 45
-                      status:
-                        type: string
-                        example: "ATIVA"
-        "400":
-          description: Dados incompletos (Middleware Validation)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                status: "fail"
-                message: "Dados incompletos."
-
-  # -------------------------
-  # CONSULTA PÚBLICA
-  # -------------------------
-  /usuario/status:
+  /public/status:
     get:
-      summary: Verificar Status da Assinatura
-      tags: [Subscription]
-      description: Verifica se um e-mail possui uma assinatura ativa para participar do sorteio.
+      summary: Verificar status de assinatura
+      tags: [Public]
+      description: Verifica se um email possui assinatura ativa
       parameters:
         - in: query
           name: email
+          required: true
           schema:
             type: string
             format: email
-          required: true
-          description: E-mail do usuário para busca
+          example: "joao@example.com"
       responses:
         "200":
-          description: Status retornado com sucesso
+          description: Status retornado
           content:
             application/json:
               schema:
@@ -177,47 +236,158 @@ paths:
                 properties:
                   status:
                     type: string
-                    example: "success"
-                  data:
+                    enum: [active, inactive]
+                    example: "active"
+                  user:
                     type: object
                     properties:
-                      ativo:
-                        type: boolean
-                        example: true
-                      validade:
+                      name:
                         type: string
-                        format: date-time
-        "404":
-          description: Usuário não encontrado
+                        example: "João Silva"
+        "400":
+          description: Parâmetro email não fornecido
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
+                $ref: "#/components/schemas/Error"
 
-  # -------------------------
-  # ADMINISTRAÇÃO (PRIVADO)
-  # -------------------------
-  /admin/sortear:
+  /public/winners:
+    get:
+      summary: Últimos ganhadores
+      tags: [Public]
+      description: Retorna últimos 3 ganhadores mascarados
+      responses:
+        "200":
+          description: Lista de ganhadores
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  winners:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        position:
+                          type: integer
+                          example: 1
+                        name:
+                          type: string
+                          description: Apenas primeiro nome
+                          example: "João"
+                        prize:
+                          type: string
+                          example: "iPhone 15 Pro"
+                        date:
+                          type: string
+                          example: "25/01/2026"
+
+  # ========================================
+  # WEBHOOKS
+  # ========================================
+
+  /webhooks/lastlink:
     post:
-      summary: Realizar Sorteio
-      tags: [Admin]
-      security:
-        - bearerAuth: []
-      description: Rota protegida. Executa a lógica de sorteio entre assinantes ativos.
+      summary: Webhook Lastlink (Pagamentos)
+      tags: [Webhooks]
+      description: |
+        Endpoint chamado pela Lastlink para notificar eventos de pagamento.
+        - `paid`: Ativa usuário
+        - `cancelled/refunded/chargeback`: Desativa usuário
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              required: [premio]
-              properties:
-                premio:
-                  type: string
-                  example: "iPhone 15 Pro"
+              $ref: "#/components/schemas/WebhookPayload"
       responses:
         "200":
-          description: Ganhador definido com sucesso
+          description: Webhook processado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "success"
+                  message:
+                    type: string
+                    example: "Usuário atualizado"
+        "400":
+          description: Payload inválido
+
+  # ========================================
+  # ROTAS ADMIN (Autenticadas)
+  # ========================================
+
+  /admin/draw:
+    post:
+      summary: Realizar sorteio
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      description: |
+        Executa sorteio determinístico usando Bitcoin block hash.
+        Retorna vencedor e dados de auditoria completos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DrawRequest"
+      responses:
+        "201":
+          description: Sorteio realizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DrawResponse"
+        "400":
+          description: Nenhum participante ativo ou campo prize ausente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Token não fornecido ou inválido
+        "500":
+          description: Erro interno
+
+  /admin/dashboard-data:
+    get:
+      summary: Dados do dashboard
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      description: Retorna estatísticas gerais do sistema
+      responses:
+        "200":
+          description: Estatísticas retornadas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+        "401":
+          description: Não autenticado
+
+  /admin/participants:
+    post:
+      summary: Adicionar participante manualmente
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      description: Cria novo membro com status 'active'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ParticipantInput"
+      responses:
+        "201":
+          description: Participante criado
           content:
             application/json:
               schema:
@@ -227,15 +397,59 @@ paths:
                     type: string
                     example: "success"
                   data:
-                    type: object
-                    properties:
-                      ganhador:
-                        type: string
-                        example: "João da Silva"
-                      email:
-                        type: string
-                        example: "j***@email.com"
+                    $ref: "#/components/schemas/Member"
+        "409":
+          description: Email já existe
         "401":
-          description: Token não fornecido ou inválido
-        "500":
-          description: Erro interno ao realizar sorteio
+          description: Não autenticado
+
+  /admin/members:
+    get:
+      summary: Buscar membros
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      description: Busca membros ativos por nome, email ou telefone
+      parameters:
+        - in: query
+          name: search
+          required: true
+          schema:
+            type: string
+          example: "joão"
+      responses:
+        "200":
+          description: Lista de membros encontrados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+        "401":
+          description: Não autenticado
+
+  /admin/history:
+    get:
+      summary: Histórico de sorteios (PÚBLICO)
+      tags: [Admin]
+      description: |
+        Retorna últimos 20 sorteios com dados completos.
+        **Nota:** Esta rota é pública (sem autenticação)
+      responses:
+        "200":
+          description: Histórico retornado
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/HistoryEntry"
+
+tags:
+  - name: Public
+    description: Rotas públicas (sem autenticação)
+  - name: Webhooks
+    description: Endpoints para integrações externas
+  - name: Admin
+    description: Rotas administrativas (requerem Supabase JWT)
