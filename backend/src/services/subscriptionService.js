@@ -8,9 +8,10 @@ class SubscriptionService {
    * @param {Object} data - Dados do webhook
    * @param {string} data.email - Email do membro
    * @param {string} data.nome - Nome do membro
+   * @param {string} [data.telefone] - Telefone do membro (opcional)
    * @param {string} [data.id] - ID da LastLink (opcional, usado como id do membro se fornecido)
    */
-  async handlePaymentSuccess({ email, nome, id: lastlinkId }) {
+  async handlePaymentSuccess({ email, nome, telefone, id: lastlinkId }) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
@@ -23,15 +24,19 @@ class SubscriptionService {
       let member = memberRes.rows[0];
 
       if (member) {
-        // 2. Se existe: Atualizar para ativo
+        // 2. Se existe: Atualizar para ativo e atualizar telefone se fornecido
         console.log(`📝 Atualizando membro existente: ${normalizedEmail}`);
         const updateQuery = `
           UPDATE lastlink_members 
-          SET status = 'active'
+          SET status = 'active',
+              telefone = COALESCE($2, telefone)
           WHERE id = $1
-          RETURNING id, email, status;
+          RETURNING id, email, telefone, status;
         `;
-        const updateRes = await client.query(updateQuery, [member.id]);
+        const updateRes = await client.query(updateQuery, [
+          member.id,
+          telefone || null,
+        ]);
         member = updateRes.rows[0];
       } else {
         // 3. Se NÃO existe: Criar novo membro
@@ -42,14 +47,15 @@ class SubscriptionService {
           `➕ Criando novo membro: ${nome} (${normalizedEmail}) - ID: ${memberId}`,
         );
         const insertQuery = `
-          INSERT INTO lastlink_members (id, nome, email, status)
-          VALUES ($1, $2, $3, 'active')
-          RETURNING id, email, status;
+          INSERT INTO lastlink_members (id, nome, email, telefone, status)
+          VALUES ($1, $2, $3, $4, 'active')
+          RETURNING id, email, telefone, status;
         `;
         const insertRes = await client.query(insertQuery, [
           memberId,
           nome.trim(),
           normalizedEmail,
+          telefone || null,
         ]);
         member = insertRes.rows[0];
       }
