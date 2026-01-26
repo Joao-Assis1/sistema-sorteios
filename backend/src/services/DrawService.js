@@ -63,7 +63,8 @@ class DrawService {
 
       // Calcular draw_hash manualmente (mesmo algoritmo do trigger)
       // Formato: seed_value | seed_source | participante_id
-      const concatenated = `${bitcoinData.hash}|blockchain.info/q/latesthash|${winner.id}`;
+      const concatenated = `${bitcoinData.hash}|https://blockchain.info/q/latesthash|${winner.id}`;
+      const crypto = await import("crypto");
       const drawHash = crypto
         .createHash("sha256")
         .update(concatenated)
@@ -92,7 +93,7 @@ class DrawService {
         prizeDescription,
         winner.id,
         bitcoinData.hash,
-        "blockchain.info/q/latesthash",
+        "https://blockchain.info/q/latesthash",
         participantsCount,
         drawHash,
       ]);
@@ -110,7 +111,7 @@ class DrawService {
         draw_details: draw,
         audit_data: {
           seed_value: bitcoinData.hash,
-          seed_source: "blockchain.info/q/latesthash",
+          seed_source: "https://blockchain.info/q/latesthash",
           draw_hash: drawHash,
           winner_index: index,
           total_participants: activeUsers.length,
