@@ -48,7 +48,8 @@ class DrawController {
           h.seed_source,
           h.participants_count as total_participants,
           m.nome as ganhador_nome,
-          m.email as ganhador_email
+          m.email as ganhador_email,
+          m.telefone as ganhador_telefone
         FROM historico_sorteios h
         LEFT JOIN lastlink_members m ON h.participante_id = m.id
         ORDER BY h.data_sorteio DESC
@@ -163,8 +164,8 @@ class DrawController {
       console.error("❌ Add Participant Error:", error);
 
       // Log detalhado para erros de constraint
-      const notNull = "23502"
-      const unique = "23505"
+      const notNull = "23502";
+      const unique = "23505";
       if (error.code === notNull) {
         console.error("⚠️ Violação NOT NULL - coluna:", error.column);
       } else if (error.code === unique) {
