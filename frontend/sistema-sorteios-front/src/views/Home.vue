@@ -481,7 +481,7 @@
                 <!-- Link para Fonte Oficial -->
                 <a
                   v-if="draw.seed_source"
-                  :href="ensureAbsoluteUrl(draw.seed_source)"
+                  :href="draw.seed_source"
                   target="_blank"
                   rel="noopener noreferrer"
                   class="flex items-center justify-center gap-2 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition"
@@ -579,15 +579,6 @@ const subscriptionLink = ref("#");
 const formatDate = (dateStr) => {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("pt-BR");
-};
-
-/**
- * Garante que uma URL seja absoluta (com protocolo)
- */
-const ensureAbsoluteUrl = (url) => {
-  if (!url) return "#";
-  if (/^https?:\/\//i.test(url)) return url;
-  return `https://${url}`;
 };
 
 /**

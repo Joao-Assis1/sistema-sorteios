@@ -1,5 +1,6 @@
 import drawService from "../services/DrawService.js";
 import * as db from "../config/database.js";
+import crypto from "crypto";
 
 class DrawController {
   async createDraw(req, res) {
@@ -123,24 +124,35 @@ class DrawController {
           .json({ error: "Nome e email são obrigatórios." });
       }
 
+      // Normalizar email para lowercase
+      const normalizedEmail = email.toLowerCase().trim();
+
       // Check if member already exists
       const existingMember = await db.query(
         `SELECT id FROM lastlink_members WHERE email = $1`,
-        [email],
+        [normalizedEmail],
       );
 
       if (existingMember.rows.length > 0) {
+        console.log(`⚠️ Email já cadastrado: ${normalizedEmail}`);
         return res
           .status(409)
           .json({ error: "Membro com este email já existe." });
       }
 
+      // Gerar UUID para o id (coluna é TEXT, não auto-gerada)
+      const memberId = crypto.randomUUID();
+
       // Insert new member with active status
       const insertRes = await db.query(
-        `INSERT INTO lastlink_members (nome, email, telefone, status)
-         VALUES ($1, $2, $3, 'active')
+        `INSERT INTO lastlink_members (id, nome, email, telefone, status)
+         VALUES ($1, $2, $3, $4, 'active')
          RETURNING id, nome, email, telefone, status`,
-        [name, email, phone || null],
+        [memberId, name.trim(), normalizedEmail, phone || null],
+      );
+
+      console.log(
+        `✅ Novo membro adicionado: ${insertRes.rows[0].nome} (${memberId})`,
       );
 
       return res.status(201).json({
@@ -148,7 +160,18 @@ class DrawController {
         data: insertRes.rows[0],
       });
     } catch (error) {
-      console.error("Add Participant Error:", error);
+      console.error("❌ Add Participant Error:", error);
+
+      // Log detalhado para erros de constraint
+      const notNull = "23502"
+      const unique = "23505"
+      if (error.code === notNull) {
+        console.error("⚠️ Violação NOT NULL - coluna:", error.column);
+      } else if (error.code === unique) {
+        console.error("⚠️ Violação UNIQUE - detalhe:", error.detail);
+        return res.status(409).json({ error: "Email já cadastrado." });
+      }
+
       return res.status(500).json({ error: "Erro ao adicionar participante." });
     }
   }
