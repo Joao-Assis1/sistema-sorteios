@@ -24,8 +24,12 @@ router.get("/members", authMiddleware, drawController.searchMembers);
 // ========================================
 // ROTA PÚBLICA (Sem autenticação)
 // ========================================
-// GET /admin/history - Histórico de sorteios público
+// GET /admin/history - Histórico de sorteios público (resumido)
 router.get("/history", (req, res) => drawController.getHistory(req, res));
+
+// GET /admin/results - Resultados de auditoria públicos (com dados completos)
+// Esta rota retorna os campos de transparência para verificação externa
+router.get("/results", (req, res) => drawController.getAuditResults(req, res));
 
 // POST /admin/webhook - Webhook Lastlink (pagamentos e cancelamentos)
 router.post("/webhook", (req, res) =>
