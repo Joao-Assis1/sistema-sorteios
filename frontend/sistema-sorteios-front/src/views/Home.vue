@@ -258,6 +258,147 @@
         </p>
       </section>
 
+      <!-- Seção: Próximo Sorteio (Lista Lacrada) -->
+      <section class="w-full py-8 px-4 bg-gray-800 border-b border-gray-700">
+        <div class="max-w-4xl mx-auto">
+          <div class="flex items-center gap-3 mb-6">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-green-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              />
+            </svg>
+            <h3 class="text-xl md:text-2xl font-bold text-white">
+              Próximo Sorteio
+            </h3>
+          </div>
+
+          <!-- Loading do Snapshot -->
+          <div
+            v-if="isLoadingCurrentList"
+            class="flex items-center justify-center py-8 text-gray-400"
+          >
+            <svg
+              class="animate-spin h-6 w-6 mr-3"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span>Carregando lista lacrada...</span>
+          </div>
+
+          <!-- Dados do Snapshot -->
+          <div v-else-if="currentListData" class="space-y-6">
+            <!-- Cards de Informação -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- Hash de Segurança -->
+              <div class="bg-gray-900 rounded-xl p-4 border border-gray-700">
+                <p class="text-xs text-gray-400 mb-2 uppercase tracking-wide">
+                  🔐 Hash de Segurança da Lista
+                </p>
+                <p
+                  class="font-mono text-xs md:text-sm text-green-400 break-all"
+                >
+                  {{ currentListData.list_hash }}
+                </p>
+              </div>
+
+              <!-- Bloco Alvo Bitcoin -->
+              <div class="bg-gray-900 rounded-xl p-4 border border-gray-700">
+                <p class="text-xs text-gray-400 mb-2 uppercase tracking-wide">
+                  ₿ Bloco Alvo do Bitcoin
+                </p>
+                <p class="font-mono text-sm text-blue-400">
+                  {{ targetBitcoinBlock || "A ser definido" }}
+                </p>
+                <p class="text-xs text-gray-500 mt-1">
+                  Total de participantes:
+                  <span class="text-white font-bold">{{
+                    currentListData.total_participants
+                  }}</span>
+                </p>
+              </div>
+            </div>
+
+            <!-- Grid de Participantes -->
+            <div>
+              <h4 class="text-lg font-semibold text-gray-300 mb-4">
+                📋 Participantes Confirmados
+              </h4>
+              <div
+                v-if="currentListData.participants.length > 0"
+                class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
+              >
+                <div
+                  v-for="participant in currentListData.participants.slice(
+                    0,
+                    12,
+                  )"
+                  :key="participant.lucky_number"
+                  class="bg-gray-900 rounded-lg p-3 border border-gray-700 flex items-center gap-3"
+                >
+                  <div
+                    class="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm"
+                  >
+                    #{{ participant.lucky_number }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm text-white font-medium truncate">
+                      {{ participant.name }}
+                    </p>
+                    <p class="text-xs text-gray-500 truncate">
+                      {{ participant.email }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <p
+                v-if="currentListData.participants.length > 12"
+                class="text-center text-gray-500 text-sm mt-4"
+              >
+                ... e mais
+                {{ currentListData.total_participants - 12 }} participantes
+              </p>
+              <div
+                v-if="currentListData.participants.length === 0"
+                class="text-center py-8 text-gray-400"
+              >
+                <span class="text-4xl block mb-2">🎯</span>
+                <p>Nenhum participante ativo no momento.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Erro ao carregar -->
+          <div v-else class="text-center py-8 text-gray-400">
+            <span class="text-4xl block mb-2">⚠️</span>
+            <p>Não foi possível carregar a lista.</p>
+          </div>
+        </div>
+      </section>
+
       <!-- Loading -->
       <div
         v-if="isLoadingHistory"
@@ -570,6 +711,11 @@ const isLoadingHistory = ref(false);
 const winners = ref([]);
 const auditHistory = ref([]);
 
+// Dados do snapshot da lista atual
+const currentListData = ref(null);
+const isLoadingCurrentList = ref(false);
+const targetBitcoinBlock = ref(""); // Campo informativo
+
 // Link para assinatura
 const subscriptionLink = ref("#");
 
@@ -640,11 +786,14 @@ const checkStatus = async () => {
 
     if (response.data.status === "active") {
       const { name, subscription_end_date } = response.data.user;
+      const luckyNumber = response.data.lucky_number;
+
       Swal.fire({
         icon: "success",
         title: "Parabéns! 🎉",
         html: `
           <p class="text-lg"><strong>${name}</strong>, sua assinatura está <span class="text-green-600 font-bold">ativa</span>!</p>
+          ${luckyNumber ? `<p class="text-green-600 mt-3 text-xl font-bold">🎫 Seu Número da Sorte: #${luckyNumber}</p>` : ""}
           ${subscription_end_date ? `<p class="text-gray-600 mt-2">Válida até: <strong>${subscription_end_date}</strong></p>` : ""}
           <p class="text-gray-500 mt-4">Você está concorrendo aos sorteios diários.</p>
         `,
@@ -731,10 +880,28 @@ const loadAuditHistory = async () => {
   }
 };
 
+/**
+ * Carrega a lista atual de participantes com hash de segurança
+ */
+const loadCurrentList = async () => {
+  isLoadingCurrentList.value = true;
+
+  try {
+    const response = await api.get("/public/current-list");
+    currentListData.value = response.data;
+  } catch (error) {
+    console.error("Load current list error:", error);
+    currentListData.value = null;
+  } finally {
+    isLoadingCurrentList.value = false;
+  }
+};
+
 // Carrega dados ao montar o componente
 onMounted(() => {
   loadWinners();
   loadAuditHistory();
+  loadCurrentList();
 });
 </script>
 
