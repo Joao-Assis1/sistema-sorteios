@@ -1,28 +1,28 @@
 import * as db from "../config/database.js";
 import drawService from "../services/DrawService.js";
 
-class PublicController {
-  /**
-   * Mascara o nome: mostra primeiro nome + inicial do sobrenome
-   */
-  maskName(name) {
-    if (!name) return "Participante";
-    const parts = name.trim().split(" ");
-    if (parts.length === 1) return parts[0];
-    return parts[0] + " " + parts[1].charAt(0) + ".";
-  }
+/**
+ * Mascara o nome: mostra primeiro nome + inicial do sobrenome
+ */
+function maskName(name) {
+  if (!name) return "Participante";
+  const parts = name.trim().split(" ");
+  if (parts.length === 1) return parts[0];
+  return parts[0] + " " + parts[1].charAt(0) + ".";
+}
 
-  /**
-   * Mascara o email: mostra primeiros 2 chars + *** + domínio
-   */
-  maskEmail(email) {
-    if (!email) return "***@***.com";
-    const [local, domain] = email.split("@");
-    if (!domain) return "***@***.com";
-    const maskedLocal =
-      local.length > 2 ? local.substring(0, 2) + "***" : "***";
-    return maskedLocal + "@" + domain;
-  }
+/**
+ * Mascara o email: mostra primeiros 2 chars + *** + domínio
+ */
+function maskEmail(email) {
+  if (!email) return "***@***.com";
+  const [local, domain] = email.split("@");
+  if (!domain) return "***@***.com";
+  const maskedLocal = local.length > 2 ? local.substring(0, 2) + "***" : "***";
+  return maskedLocal + "@" + domain;
+}
+
+class PublicController {
   /**
    * GET /public/status?email=user@example.com
    * Verifica o status da assinatura do usuário pelo email.
@@ -142,8 +142,8 @@ class PublicController {
       // Anonimizar dados pessoais
       const anonymizedList = snapshot.participants.map((p) => ({
         lucky_number: p.lucky_number,
-        name: this.maskName(p.name),
-        email: this.maskEmail(p.email),
+        name: maskName(p.name),
+        email: maskEmail(p.email),
       }));
 
       return res.json({
