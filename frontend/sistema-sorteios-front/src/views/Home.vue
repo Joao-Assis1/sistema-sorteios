@@ -331,7 +331,7 @@
                   ₿ Bloco Alvo do Bitcoin
                 </p>
                 <p class="font-mono text-sm text-blue-400">
-                  {{ targetBitcoinBlock || "A ser definido" }}
+                  {{ snapshotData?.next_draw_target_block || "A ser definido" }}
                 </p>
                 <p class="text-xs text-gray-500 mt-1">
                   Total de participantes:
@@ -339,6 +339,29 @@
                     currentListData.total_participants
                   }}</span>
                 </p>
+                <a
+                  v-if="snapshotData?.explorer_url"
+                  :href="snapshotData.explorer_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 mt-3 text-sm text-blue-400 hover:text-blue-300 transition"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                  Conferir Bloco na Blockchain
+                </a>
               </div>
             </div>
 
@@ -713,8 +736,8 @@ const auditHistory = ref([]);
 
 // Dados do snapshot da lista atual
 const currentListData = ref(null);
+const snapshotData = ref(null);
 const isLoadingCurrentList = ref(false);
-const targetBitcoinBlock = ref(""); // Campo informativo
 
 // Link para assinatura
 const subscriptionLink = ref("#");
@@ -787,13 +810,16 @@ const checkStatus = async () => {
     if (response.data.status === "active") {
       const { name, subscription_end_date } = response.data.user;
       const luckyNumber = response.data.lucky_number;
+      const listHash = currentListData.value?.list_hash || "";
+      const shortHash = listHash ? listHash.substring(0, 12) + "..." : "";
 
       Swal.fire({
         icon: "success",
         title: "Parabéns! 🎉",
         html: `
           <p class="text-lg"><strong>${name}</strong>, sua assinatura está <span class="text-green-600 font-bold">ativa</span>!</p>
-          ${luckyNumber ? `<p class="text-green-600 mt-3 text-xl font-bold">🎫 Seu Número da Sorte: #${luckyNumber}</p>` : ""}
+          ${luckyNumber ? `<p class="text-green-600 mt-3 text-xl font-bold">🎫 Seu Nº da Sorte: #${luckyNumber}</p>` : ""}
+          ${shortHash ? `<p class="text-gray-500 text-xs mt-1">(Baseado no Lacre ${shortHash})</p>` : ""}
           ${subscription_end_date ? `<p class="text-gray-600 mt-2">Válida até: <strong>${subscription_end_date}</strong></p>` : ""}
           <p class="text-gray-500 mt-4">Você está concorrendo aos sorteios diários.</p>
         `,
@@ -887,11 +913,17 @@ const loadCurrentList = async () => {
   isLoadingCurrentList.value = true;
 
   try {
-    const response = await api.get("/public/current-list");
-    currentListData.value = response.data;
+    // Buscar lista de participantes
+    const listResponse = await api.get("/public/current-list");
+    currentListData.value = listResponse.data;
+
+    // Buscar snapshot com bloco alvo
+    const snapshotResponse = await api.get("/public/snapshot");
+    snapshotData.value = snapshotResponse.data;
   } catch (error) {
     console.error("Load current list error:", error);
     currentListData.value = null;
+    snapshotData.value = null;
   } finally {
     isLoadingCurrentList.value = false;
   }
