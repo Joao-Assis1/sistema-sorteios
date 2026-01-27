@@ -5,7 +5,7 @@ import crypto from "crypto";
 class DrawController {
   async createDraw(req, res) {
     try {
-      const { prize } = req.body;
+      const { prize, target_block } = req.body;
 
       if (!prize) {
         return res
@@ -13,7 +13,13 @@ class DrawController {
           .json({ error: "Descrição do prêmio é obrigatória." });
       }
 
-      const result = await drawService.performManualDraw(prize);
+      if (!target_block) {
+        return res
+          .status(400)
+          .json({ error: "Bloco alvo do Bitcoin é obrigatório." });
+      }
+
+      const result = await drawService.performManualDraw(prize, target_block);
 
       return res.status(201).json({
         status: "success",
@@ -27,6 +33,9 @@ class DrawController {
     } catch (error) {
       console.error("Draw Error:", error);
       if (error.message === "Nenhum assinante ativo para sortear.") {
+        return res.status(400).json({ error: error.message });
+      }
+      if (error.message.includes("ainda não foi minerado")) {
         return res.status(400).json({ error: error.message });
       }
       return res

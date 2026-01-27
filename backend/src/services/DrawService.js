@@ -23,15 +23,25 @@ class DrawService {
     }
   }
 
-  async performManualDraw(prizeDescription) {
+  async performManualDraw(prizeDescription, targetBlockHeight) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
 
-      // 1. Buscar hash do Bitcoin ANTES do sorteio (para auditoria)
-      console.log("🔗 Buscando hash do Bitcoin...");
-      const bitcoinData = await this.fetchLatestBitcoinHash();
-      console.log("✅ Hash obtido:", bitcoinData.hash.substring(0, 16) + "...");
+      // 1. Buscar hash do bloco alvo do Bitcoin
+      console.log(`🔗 Buscando hash do bloco #${targetBlockHeight}...`);
+      let bitcoinData;
+      try {
+        bitcoinData = await this.fetchBlockHashByHeight(targetBlockHeight);
+        console.log(
+          "✅ Hash obtido:",
+          bitcoinData.hash.substring(0, 16) + "...",
+        );
+      } catch (blockError) {
+        throw new Error(
+          `Este bloco (#${targetBlockHeight}) ainda não foi minerado. Aguarde o tempo necessário.`,
+        );
+      }
 
       // 2. Buscar todos os membros ATIVOS (ordenados por ID para consistência)
       const usersQuery = `
@@ -63,8 +73,8 @@ class DrawService {
 
       // Calcular draw_hash manualmente (mesmo algoritmo do trigger)
       // Formato: seed_value | seed_source | participante_id
-      const concatenated = `${bitcoinData.hash}|https://blockchain.info/q/latesthash|${winner.id}`;
-      const crypto = await import("crypto");
+      const seedSource = `https://blockchain.info/block-height/${targetBlockHeight}`;
+      const concatenated = `${bitcoinData.hash}|${seedSource}|${winner.id}`;
       const drawHash = crypto
         .createHash("sha256")
         .update(concatenated)
@@ -93,7 +103,7 @@ class DrawService {
         prizeDescription,
         winner.id,
         bitcoinData.hash,
-        "https://blockchain.info/q/latesthash",
+        seedSource,
         participantsCount,
         drawHash,
       ]);
