@@ -11,4 +11,7 @@ router.get("/status", publicController.checkStatus);
 // Buscar últimos ganhadores
 router.get("/winners", publicController.getRecentWinners);
 
+// Buscar lista atual de participantes com hash de segurança
+router.get("/current-list", publicController.getCurrentList);
+
 export default router;

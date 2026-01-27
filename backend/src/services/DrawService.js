@@ -123,8 +123,8 @@ class DrawService {
       console.error("❌ Erro no sorteio:", error.message);
 
       // Log detalhado para erros de constraint
-      const notNull = "23502"
-      const unique = "23505"
+      const notNull = "23502";
+      const unique = "23505";
       if (error.code === notNull) {
         console.error("⚠️ Violação NOT NULL - coluna:", error.column);
       } else if (error.code === "23503") {
@@ -136,6 +136,53 @@ class DrawService {
       throw error;
     } finally {
       client.release();
+    }
+  }
+
+  /**
+   * Gera um snapshot imutável da lista de participantes ativos.
+   * Retorna o hash SHA-256 da lista (lacre) e dados anonimizados.
+   * @returns {Promise<{total_participants: number, list_hash: string, participants: Array}>}
+   */
+  async getParticipantSnapshot() {
+    try {
+      // 1. Buscar todos os membros ativos ordenados por ID (ordem determinística)
+      const query = `
+        SELECT id, nome, email 
+        FROM lastlink_members 
+        WHERE status = 'active'
+        ORDER BY id ASC
+      `;
+      const result = await pool.query(query);
+      const activeUsers = result.rows;
+
+      // 2. Gerar hash SHA-256 concatenando IDs dos participantes
+      // Este hash serve como "lacre" da lista - qualquer alteração muda o hash
+      const idsConcatenated = activeUsers.map((u) => u.id).join("|");
+      const listHash = crypto
+        .createHash("sha256")
+        .update(idsConcatenated)
+        .digest("hex");
+
+      // 3. Retornar dados com "Número da Sorte" (índice + 1)
+      const participants = activeUsers.map((user, index) => ({
+        lucky_number: index + 1,
+        name: user.nome,
+        email: user.email,
+      }));
+
+      console.log(
+        `📋 Snapshot gerado: ${activeUsers.length} participantes, hash: ${listHash.substring(0, 16)}...`,
+      );
+
+      return {
+        total_participants: activeUsers.length,
+        list_hash: listHash,
+        participants,
+      };
+    } catch (error) {
+      console.error("❌ Erro ao gerar snapshot:", error.message);
+      throw new Error("Falha ao gerar snapshot da lista de participantes.");
     }
   }
 }
