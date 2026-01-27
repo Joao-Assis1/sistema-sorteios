@@ -310,8 +310,24 @@
             >
               <div class="px-6 pb-6">
                 <p class="text-gray-500 text-sm mb-6">
-                  Configure o prêmio e realize o sorteio aleatório entre os
-                  participantes qualificados.
+                  Configure o prêmio e o bloco alvo para realizar o sorteio
+                  determinístico baseado no Bitcoin.
+                </p>
+                <input
+                  v-model="drawForm.target_block"
+                  type="number"
+                  placeholder="Bloco Alvo do Bitcoin (ex: 880000)"
+                  class="w-full px-4 py-3 bg-gray-50 rounded-lg border-none focus:ring-2 focus:ring-blue-500 outline-none mb-4"
+                  required
+                />
+                <p class="text-xs text-gray-400 -mt-2 mb-4">
+                  <a
+                    href="https://mempool.space/"
+                    target="_blank"
+                    class="text-blue-500 hover:underline"
+                  >
+                    Ver altura atual do Bitcoin →
+                  </a>
                 </p>
                 <input
                   v-model="drawForm.prize"
@@ -643,6 +659,7 @@ const newParticipant = ref({
 
 const drawForm = ref({
   prize: "",
+  target_block: "",
 });
 
 // Debounce timer
@@ -843,10 +860,21 @@ const handleDraw = async () => {
     return;
   }
 
+  if (!drawForm.value.target_block) {
+    Swal.fire({
+      icon: "warning",
+      title: "Bloco Alvo Obrigatório",
+      text: "Por favor, informe o número do bloco alvo do Bitcoin.",
+      confirmButtonColor: "#22c55e",
+    });
+    return;
+  }
+
   loadingDraw.value = true;
   try {
     const response = await api.post("/admin/draw", {
       prize: drawForm.value.prize,
+      target_block: parseInt(drawForm.value.target_block, 10),
     });
     const result = response.data.data;
 
@@ -865,6 +893,7 @@ const handleDraw = async () => {
           <p class="text-sm text-gray-400 mt-2">Total de participantes: ${
             result.total_participants
           }</p>
+          <p class="text-xs text-blue-500 mt-2">Bloco usado: #${drawForm.value.target_block}</p>
         </div>
       `,
       showConfirmButton: true,
@@ -876,6 +905,7 @@ const handleDraw = async () => {
     });
 
     drawForm.value.prize = "";
+    drawForm.value.target_block = "";
     await fetchDashboardData();
     // Limpa o histórico para forçar reload na próxima vez
     historyList.value = [];

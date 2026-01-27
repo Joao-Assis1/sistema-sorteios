@@ -331,7 +331,9 @@
                   ₿ Bloco Alvo do Bitcoin
                 </p>
                 <p class="font-mono text-sm text-blue-400">
-                  {{ snapshotData?.next_draw_target_block || "A ser definido" }}
+                  #{{
+                    snapshotData?.next_draw_target_block || "A ser definido"
+                  }}
                 </p>
                 <p class="text-xs text-gray-500 mt-1">
                   Total de participantes:
@@ -363,6 +365,29 @@
                   Conferir Bloco na Blockchain
                 </a>
               </div>
+            </div>
+
+            <!-- Instrução Visual -->
+            <div
+              v-if="snapshotData?.next_draw_target_block"
+              class="bg-green-900/30 border border-green-700 rounded-xl p-4 mt-4"
+            >
+              <p class="text-sm text-green-300">
+                <span class="font-bold">📢 Como funciona:</span> O sorteio será
+                decidido pelo resultado do
+                <span class="font-mono text-green-400"
+                  >Bloco #{{ snapshotData.next_draw_target_block }}</span
+                >
+                do Bitcoin.
+                <a
+                  href="https://mempool.space/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-blue-400 hover:underline ml-1"
+                >
+                  Ver altura atual →
+                </a>
+              </p>
             </div>
 
             <!-- Grid de Participantes -->
