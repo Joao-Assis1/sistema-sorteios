@@ -185,6 +185,63 @@ class DrawService {
       throw new Error("Falha ao gerar snapshot da lista de participantes.");
     }
   }
+
+  /**
+   * Busca o hash de um bloco Bitcoin específico pela altura.
+   * @param {number} blockHeight - Altura do bloco alvo
+   * @returns {Promise<{hash: string, height: number}>}
+   */
+  async fetchBlockHashByHeight(blockHeight) {
+    try {
+      const response = await axios.get(
+        `https://blockchain.info/block-height/${blockHeight}?format=json`,
+        { timeout: 15000 },
+      );
+
+      if (response.data && response.data.blocks && response.data.blocks[0]) {
+        const block = response.data.blocks[0];
+        return {
+          hash: block.hash,
+          height: block.height,
+        };
+      }
+
+      throw new Error(`Bloco ${blockHeight} não encontrado.`);
+    } catch (error) {
+      console.error(`❌ Erro ao buscar bloco ${blockHeight}:`, error.message);
+      throw new Error(`Falha ao obter hash do bloco ${blockHeight}.`);
+    }
+  }
+
+  /**
+   * Retorna snapshot completo para o endpoint público /public/snapshot.
+   * Inclui o bloco alvo do próximo sorteio se configurado.
+   * @returns {Promise<{total_participants, list_hash, target_block, explorer_url}>}
+   */
+  async getNextDrawSnapshot() {
+    try {
+      // Gerar snapshot da lista atual
+      const snapshot = await this.getParticipantSnapshot();
+
+      // Bloco alvo pode ser configurado via variável de ambiente ou banco
+      // Por enquanto, usamos uma variável de ambiente ou null
+      const targetBlock = process.env.NEXT_DRAW_TARGET_BLOCK
+        ? parseInt(process.env.NEXT_DRAW_TARGET_BLOCK, 10)
+        : null;
+
+      return {
+        total_participants: snapshot.total_participants,
+        list_hash: snapshot.list_hash,
+        target_block: targetBlock,
+        explorer_url: targetBlock
+          ? `https://mempool.space/block/${targetBlock}`
+          : null,
+      };
+    } catch (error) {
+      console.error("❌ Erro ao gerar snapshot para endpoint:", error.message);
+      throw error;
+    }
+  }
 }
 
 export default new DrawService();

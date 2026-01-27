@@ -158,6 +158,28 @@ class PublicController {
       });
     }
   }
+
+  /**
+   * GET /public/snapshot
+   * Retorna snapshot público com hash da lista e bloco alvo.
+   */
+  async getSnapshot(req, res) {
+    try {
+      const snapshot = await drawService.getNextDrawSnapshot();
+
+      return res.json({
+        total_active_participants: snapshot.total_participants,
+        current_list_hash: snapshot.list_hash,
+        next_draw_target_block: snapshot.target_block,
+        explorer_url: snapshot.explorer_url,
+      });
+    } catch (error) {
+      console.error("Get Snapshot Error:", error);
+      return res.status(500).json({
+        error: "Erro ao buscar snapshot.",
+      });
+    }
+  }
 }
 
 export default new PublicController();
