@@ -21,6 +21,10 @@ router.post("/participants", authMiddleware, drawController.addParticipant);
 // Search members
 router.get("/members", authMiddleware, drawController.searchMembers);
 
+// Draw configuration (get/update)
+router.get("/draw-config", authMiddleware, drawController.getDrawConfig);
+router.put("/draw-config", authMiddleware, drawController.updateDrawConfig);
+
 // ========================================
 // ROTA PÚBLICA (Sem autenticação)
 // ========================================
