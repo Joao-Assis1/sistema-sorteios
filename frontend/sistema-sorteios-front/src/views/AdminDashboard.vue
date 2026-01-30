@@ -270,7 +270,72 @@
             </div>
           </div>
 
-          <!-- Section B: Draw (Accordion) -->
+          <!-- Section B: Draw Config (Configuração do Próximo Sorteio) -->
+          <div
+            class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+          >
+            <div class="px-6 py-4 border-b border-gray-100">
+              <h3
+                class="text-lg font-bold text-gray-800 flex items-center gap-2"
+              >
+                <span class="w-1 h-6 bg-blue-500 rounded-full"></span>
+                Configuração do Próximo Sorteio
+              </h3>
+            </div>
+            <div class="px-6 py-4">
+              <p class="text-gray-500 text-sm mb-4">
+                Defina o bloco alvo para o próximo sorteio. A lista de
+                participantes será "lacrada" automaticamente.
+              </p>
+              <div class="flex gap-4">
+                <input
+                  v-model="drawConfig.target_block"
+                  type="number"
+                  placeholder="Bloco Alvo (ex: 880000)"
+                  class="flex-1 px-4 py-3 bg-gray-50 rounded-lg border-none focus:ring-2 focus:ring-blue-500 outline-none"
+                />
+                <button
+                  @click="handleSaveConfig"
+                  :disabled="savingConfig"
+                  class="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-6 py-3 rounded-lg font-bold transition flex items-center gap-2"
+                >
+                  <svg
+                    v-if="savingConfig"
+                    class="animate-spin h-5 w-5"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  <span>{{ savingConfig ? "Salvando..." : "Salvar" }}</span>
+                </button>
+              </div>
+              <p class="text-xs text-gray-400 mt-2">
+                <a
+                  href="https://mempool.space/"
+                  target="_blank"
+                  class="text-blue-500 hover:underline"
+                >
+                  Ver altura atual do Bitcoin →
+                </a>
+              </p>
+            </div>
+          </div>
+
+          <!-- Section C: Draw (Realizar Sorteio) -->
           <div
             class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
           >
@@ -332,7 +397,7 @@
                 <input
                   v-model="drawForm.prize"
                   type="text"
-                  placeholder="Prêmio do Sorteio (ex: iPhone 15 pro)"
+                  placeholder="Prêmio do Sorteio (ex: Camisa Oficial)"
                   class="w-full px-4 py-3 bg-gray-50 rounded-lg border-none focus:ring-2 focus:ring-yellow-500 outline-none mb-4"
                 />
                 <button
@@ -662,8 +727,77 @@ const drawForm = ref({
   target_block: "",
 });
 
+// Draw configuration (saved to backend)
+const drawConfig = ref({
+  target_block: "",
+});
+const savingConfig = ref(false);
+
 // Debounce timer
 let searchTimeout = null;
+
+// ============================================
+// Fetch and Save Draw Config
+// ============================================
+const fetchDrawConfig = async () => {
+  try {
+    const response = await api.get("/admin/draw-config");
+    if (response.data) {
+      drawConfig.value.target_block = response.data.target_block || "";
+      // Also pre-fill draw form if config exists
+      if (response.data.target_block) {
+        drawForm.value.target_block = response.data.target_block;
+      }
+    }
+  } catch (error) {
+    console.error("Error fetching draw config:", error);
+  }
+};
+
+const handleSaveConfig = async () => {
+  if (!drawConfig.value.target_block) {
+    Swal.fire({
+      icon: "warning",
+      title: "Bloco Alvo Obrigatório",
+      text: "Por favor, informe o número do bloco alvo.",
+      confirmButtonColor: "#22c55e",
+    });
+    return;
+  }
+
+  savingConfig.value = true;
+  try {
+    await api.put("/admin/draw-config", {
+      target_block: parseInt(drawConfig.value.target_block, 10),
+    });
+
+    Swal.fire({
+      toast: true,
+      position: "top-end",
+      icon: "success",
+      title: "Configuração salva!",
+      text: `Bloco alvo definido: #${drawConfig.value.target_block}`,
+      showConfirmButton: false,
+      timer: 3000,
+      timerProgressBar: true,
+      background: "#22c55e",
+      color: "#fff",
+    });
+
+    // Also update draw form
+    drawForm.value.target_block = drawConfig.value.target_block;
+  } catch (error) {
+    console.error("Error saving config:", error);
+    Swal.fire({
+      icon: "error",
+      title: "Erro",
+      text: "Não foi possível salvar a configuração.",
+      confirmButtonColor: "#22c55e",
+    });
+  } finally {
+    savingConfig.value = false;
+  }
+};
 
 // ============================================
 // TAREFA 1: Pesquisa com Debounce
@@ -945,6 +1079,7 @@ const handleLogout = () => {
 // Lifecycle
 onMounted(() => {
   fetchDashboardData();
+  fetchDrawConfig();
 });
 </script>
 
