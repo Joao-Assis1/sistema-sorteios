@@ -56,13 +56,28 @@ class PublicController {
       if (user.status === "active") {
         // Buscar o Número da Sorte do usuário na lista atual
         let luckyNumber = null;
+        let targetBlock = null;
+        let listHash = null;
         try {
           const snapshot = await drawService.getParticipantSnapshot();
+          listHash = snapshot.list_hash;
           const userIndex = snapshot.participants.findIndex(
             (p) => p.email.toLowerCase() === normalizedEmail,
           );
           if (userIndex !== -1) {
             luckyNumber = userIndex + 1;
+          }
+
+          // Buscar bloco alvo da config
+          try {
+            const configResult = await db.query(`
+              SELECT target_block FROM sorteio_config WHERE id = 1
+            `);
+            if (configResult.rows.length > 0) {
+              targetBlock = configResult.rows[0].target_block;
+            }
+          } catch (configError) {
+            // Config pode não existir
           }
         } catch (snapshotError) {
           console.error("Erro ao buscar lucky number:", snapshotError);
@@ -74,6 +89,8 @@ class PublicController {
             name: user.nome,
           },
           lucky_number: luckyNumber,
+          target_block: targetBlock,
+          list_hash: listHash,
         });
       }
 
@@ -177,6 +194,45 @@ class PublicController {
       console.error("Get Snapshot Error:", error);
       return res.status(500).json({
         error: "Erro ao buscar snapshot.",
+      });
+    }
+  }
+
+  /**
+   * GET /public/next-draw
+   * Retorna informações do próximo sorteio: bloco alvo e lacre da lista.
+   */
+  async getNextDraw(req, res) {
+    try {
+      // Buscar configuração do sorteio
+      let targetBlock = null;
+      try {
+        const configResult = await db.query(`
+          SELECT target_block, premio_previsto FROM sorteio_config WHERE id = 1
+        `);
+        if (configResult.rows.length > 0) {
+          targetBlock = configResult.rows[0].target_block;
+        }
+      } catch (configError) {
+        // Tabela pode não existir ainda
+        console.log("Config table not found, using null:", configError.message);
+      }
+
+      // Buscar snapshot da lista (lacre)
+      const snapshot = await drawService.getParticipantSnapshot();
+
+      return res.json({
+        target_block: targetBlock,
+        list_hash: snapshot.list_hash,
+        total_participants: snapshot.total_participants,
+        explorer_url: targetBlock
+          ? `https://mempool.space/block/${targetBlock}`
+          : null,
+      });
+    } catch (error) {
+      console.error("Get Next Draw Error:", error);
+      return res.status(500).json({
+        error: "Erro ao buscar dados do próximo sorteio.",
       });
     }
   }

@@ -17,4 +17,7 @@ router.get("/current-list", publicController.getCurrentList);
 // Snapshot público com hash da lista e bloco alvo
 router.get("/snapshot", publicController.getSnapshot);
 
+// Próximo sorteio: bloco alvo e lacre da lista
+router.get("/next-draw", publicController.getNextDraw);
+
 export default router;
