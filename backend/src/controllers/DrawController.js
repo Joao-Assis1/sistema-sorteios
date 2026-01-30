@@ -347,6 +347,34 @@ class DrawController {
       return res.status(500).json({ error: "Erro ao atualizar configuração." });
     }
   }
+
+  // GET /admin/export-participants - Exportar CSV de todos os participantes
+  async exportParticipants(req, res) {
+    try {
+      const result = await db.query(`
+        SELECT nome, email, status
+        FROM lastlink_members
+        ORDER BY id ASC
+      `);
+
+      const csvHeader = "Nome,Email,Status\n";
+      const csvRows = result.rows
+        .map((row) => {
+          return `"${row.nome || ""}","${row.email || ""}","${row.status || ""}"`;
+        })
+        .join("\n");
+
+      res.setHeader("Content-Type", "text/csv; charset=utf-8");
+      res.setHeader(
+        "Content-Disposition",
+        "attachment; filename=participantes.csv",
+      );
+      return res.send(csvHeader + csvRows);
+    } catch (error) {
+      console.error("Erro ao exportar participantes:", error);
+      return res.status(500).json({ error: "Erro ao exportar participantes." });
+    }
+  }
 }
 
 export default new DrawController();
