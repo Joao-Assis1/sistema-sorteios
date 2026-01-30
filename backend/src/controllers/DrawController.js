@@ -5,7 +5,7 @@ import crypto from "crypto";
 class DrawController {
   async createDraw(req, res) {
     try {
-      const { prize } = req.body;
+      const { prize, target_block } = req.body;
 
       if (!prize) {
         return res
@@ -13,7 +13,13 @@ class DrawController {
           .json({ error: "Descrição do prêmio é obrigatória." });
       }
 
-      const result = await drawService.performManualDraw(prize);
+      if (!target_block) {
+        return res
+          .status(400)
+          .json({ error: "Bloco alvo do Bitcoin é obrigatório." });
+      }
+
+      const result = await drawService.performManualDraw(prize, target_block);
 
       return res.status(201).json({
         status: "success",
@@ -27,6 +33,9 @@ class DrawController {
     } catch (error) {
       console.error("Draw Error:", error);
       if (error.message === "Nenhum assinante ativo para sortear.") {
+        return res.status(400).json({ error: error.message });
+      }
+      if (error.message.includes("ainda não foi minerado")) {
         return res.status(400).json({ error: error.message });
       }
       return res
@@ -271,6 +280,71 @@ class DrawController {
       return res
         .status(500)
         .json({ error: "Erro ao carregar resultados de auditoria." });
+    }
+  }
+
+  // GET /admin/draw-config - Buscar configuração atual do sorteio
+  async getDrawConfig(req, res) {
+    try {
+      const result = await db.query(`
+        SELECT target_block, premio_previsto, updated_at
+        FROM sorteio_config 
+        WHERE id = 1
+      `);
+
+      if (result.rows.length === 0) {
+        return res.json({ target_block: null, premio_previsto: null });
+      }
+
+      return res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Erro ao buscar config:", error);
+      return res.status(500).json({ error: "Erro ao buscar configuração." });
+    }
+  }
+
+  // PUT /admin/draw-config - Atualizar configuração do sorteio
+  async updateDrawConfig(req, res) {
+    try {
+      const { target_block } = req.body;
+
+      // Upsert na configuração
+      const result = await db.query(
+        `
+        UPDATE sorteio_config 
+        SET target_block = $1, updated_at = NOW()
+        WHERE id = 1
+        RETURNING target_block, premio_previsto, updated_at;
+      `,
+        [target_block || null],
+      );
+
+      if (result.rows.length === 0) {
+        // Se não existe, insere
+        const insertResult = await db.query(
+          `
+          INSERT INTO sorteio_config (id, target_block, updated_at)
+          VALUES (1, $1, NOW())
+          RETURNING target_block, premio_previsto, updated_at;
+        `,
+          [target_block || null],
+        );
+        console.log(`✅ Config criada: bloco=${target_block}`);
+        return res.json({
+          status: "success",
+          data: insertResult.rows[0],
+        });
+      }
+
+      console.log(`✅ Config atualizada: bloco=${target_block}`);
+
+      return res.json({
+        status: "success",
+        data: result.rows[0],
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar config:", error);
+      return res.status(500).json({ error: "Erro ao atualizar configuração." });
     }
   }
 }

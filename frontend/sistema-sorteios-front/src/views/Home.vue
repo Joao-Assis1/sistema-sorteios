@@ -331,7 +331,9 @@
                   ₿ Bloco Alvo do Bitcoin
                 </p>
                 <p class="font-mono text-sm text-blue-400">
-                  {{ targetBitcoinBlock || "A ser definido" }}
+                  #{{
+                    snapshotData?.next_draw_target_block || "A ser definido"
+                  }}
                 </p>
                 <p class="text-xs text-gray-500 mt-1">
                   Total de participantes:
@@ -339,7 +341,53 @@
                     currentListData.total_participants
                   }}</span>
                 </p>
+                <a
+                  v-if="snapshotData?.explorer_url"
+                  :href="snapshotData.explorer_url"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-2 mt-3 text-sm text-blue-400 hover:text-blue-300 transition"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    class="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                    />
+                  </svg>
+                  Conferir Bloco na Blockchain
+                </a>
               </div>
+            </div>
+
+            <!-- Instrução Visual -->
+            <div
+              v-if="snapshotData?.next_draw_target_block"
+              class="bg-green-900/30 border border-green-700 rounded-xl p-4 mt-4"
+            >
+              <p class="text-sm text-green-300">
+                <span class="font-bold">📢 Como funciona:</span> O sorteio será
+                decidido pelo resultado do
+                <span class="font-mono text-green-400"
+                  >Bloco #{{ snapshotData.next_draw_target_block }}</span
+                >
+                do Bitcoin.
+                <a
+                  href="https://mempool.space/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-blue-400 hover:underline ml-1"
+                >
+                  Ver altura atual →
+                </a>
+              </p>
             </div>
 
             <!-- Grid de Participantes -->
@@ -651,40 +699,61 @@
                   <p class="text-xs text-gray-400 mb-3 uppercase tracking-wide">
                     Como o ganhador foi escolhido:
                   </p>
-                  <div
-                    class="flex flex-col md:flex-row items-center gap-2 md:gap-4 text-center"
-                  >
-                    <div
-                      class="bg-gray-700 rounded-lg px-4 py-2 w-full md:flex-1 min-w-0 overflow-hidden"
-                    >
-                      <p class="text-xs text-gray-400">Seed</p>
-                      <p
-                        class="font-mono text-xs md:text-sm text-green-400 break-all overflow-wrap-anywhere"
+                  <ol class="space-y-2 text-sm text-gray-300">
+                    <li class="flex items-start gap-2">
+                      <span class="text-green-400 font-bold shrink-0">1.</span>
+                      <div class="flex-1 min-w-0">
+                        <span>Pegamos o código (Hash) do Bitcoin:</span>
+                        <code
+                          class="block mt-1 text-green-400 font-mono text-xs break-all bg-gray-900/50 p-2 rounded"
+                          >{{ draw.seed_value }}</code
+                        >
+                      </div>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-green-400 font-bold">2.</span>
+                      <span>Transformamos em um número gigante.</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-green-400 font-bold">3.</span>
+                      <span
+                        >Dividimos esse número por
+                        <strong class="text-white">{{
+                          draw.total_participants
+                        }}</strong>
+                        (total de participantes).</span
                       >
-                        {{ draw.seed_value || "---" }}
-                      </p>
-                    </div>
-                    <span class="text-2xl text-gray-500">÷</span>
-                    <div class="bg-gray-700 rounded-lg px-4 py-2">
-                      <p class="text-xs text-gray-400">Participantes</p>
-                      <p class="font-mono text-blue-400 text-sm">
-                        {{ draw.total_participants || "---" }}
-                      </p>
-                    </div>
-                    <span class="text-2xl text-gray-500">=</span>
-                    <div
-                      class="bg-green-600/20 border border-green-500 rounded-lg px-4 py-2"
-                    >
-                      <p class="text-xs text-green-400">Posição do Ganhador</p>
-                      <p class="font-mono text-green-400 font-bold">
-                        {{ calculateWinnerPosition(draw) }}
-                      </p>
-                    </div>
+                    </li>
+                    <li class="flex items-start gap-2">
+                      <span class="text-green-400 font-bold">4.</span>
+                      <span
+                        >O <strong class="text-white">RESTO</strong> da divisão
+                        é o número do ganhador.</span
+                      >
+                    </li>
+                  </ol>
+
+                  <!-- Resultado Final com Explicação -->
+                  <div
+                    class="mt-4 p-3 bg-green-900/30 border border-green-700 rounded-lg"
+                  >
+                    <p class="text-sm text-gray-300">
+                      Resto da divisão foi
+                      <strong class="text-green-400">{{
+                        getWinnerRemainder(draw)
+                      }}</strong
+                      >, logo, o ganhador é o
+                      <strong class="text-green-400"
+                        >{{ getWinnerRemainder(draw) + 1 }}º</strong
+                      >
+                      da lista ({{ getWinnerRemainder(draw) }} + 1).
+                    </p>
+                    <p class="text-lg font-bold text-green-400 mt-2">
+                      Resultado: Número da Sorte #{{
+                        calculateWinnerPosition(draw)
+                      }}
+                    </p>
                   </div>
-                  <p class="text-xs text-gray-500 mt-3 text-center">
-                    Resto da divisão = posição na lista ordenada de
-                    participantes
-                  </p>
                 </div>
               </div>
             </div>
@@ -713,8 +782,8 @@ const auditHistory = ref([]);
 
 // Dados do snapshot da lista atual
 const currentListData = ref(null);
+const snapshotData = ref(null);
 const isLoadingCurrentList = ref(false);
-const targetBitcoinBlock = ref(""); // Campo informativo
 
 // Link para assinatura
 const subscriptionLink = ref("#");
@@ -728,13 +797,28 @@ const formatDate = (dateStr) => {
 };
 
 /**
- * Calcula a posição do ganhador (resto da divisão)
+ * Calcula o resto da divisão (usando BigInt para hash hexadecimal COMPLETO)
+ * Replica exatamente o algoritmo do backend (lotteryUtils.js)
+ */
+const getWinnerRemainder = (draw) => {
+  if (!draw.seed_value || !draw.total_participants) return 0;
+  try {
+    // Usa o hash COMPLETO (igual ao backend)
+    const seedBigInt = BigInt("0x" + draw.seed_value);
+    const total = BigInt(draw.total_participants);
+    return Number(seedBigInt % total);
+  } catch {
+    return 0;
+  }
+};
+
+/**
+ * Calcula a posição do ganhador (resto da divisão + 1)
  */
 const calculateWinnerPosition = (draw) => {
   if (!draw.seed_value || !draw.total_participants) return "---";
-  const seed = parseInt(draw.seed_value) || 0;
-  const total = parseInt(draw.total_participants) || 1;
-  return (seed % total) + 1; // +1 para mostrar posição 1-based
+  const remainder = getWinnerRemainder(draw);
+  return remainder + 1; // +1 porque lista começa em 1
 };
 
 /**
@@ -787,15 +871,37 @@ const checkStatus = async () => {
     if (response.data.status === "active") {
       const { name, subscription_end_date } = response.data.user;
       const luckyNumber = response.data.lucky_number;
+      const targetBlock = response.data.target_block;
+      const listHash = response.data.list_hash || "";
+      const shortHash = listHash ? listHash.substring(0, 12) + "..." : "";
+
+      let luckyNumberHtml = "";
+      if (luckyNumber && targetBlock) {
+        luckyNumberHtml = `
+          <p class="text-green-600 mt-3 text-lg font-bold">
+            ✅ Você está confirmado!
+          </p>
+          <p class="text-gray-700 mt-2">
+            Seu Nº da Sorte para o sorteio do <strong>Bloco #${targetBlock}</strong> é:
+          </p>
+          <p class="text-green-600 text-2xl font-bold mt-1">
+            🎫 #${luckyNumber}
+          </p>
+        `;
+      } else if (luckyNumber) {
+        luckyNumberHtml = `
+          <p class="text-green-600 mt-3 text-xl font-bold">🎫 Seu Nº da Sorte: #${luckyNumber}</p>
+        `;
+      }
 
       Swal.fire({
         icon: "success",
         title: "Parabéns! 🎉",
         html: `
           <p class="text-lg"><strong>${name}</strong>, sua assinatura está <span class="text-green-600 font-bold">ativa</span>!</p>
-          ${luckyNumber ? `<p class="text-green-600 mt-3 text-xl font-bold">🎫 Seu Número da Sorte: #${luckyNumber}</p>` : ""}
+          ${luckyNumberHtml}
+          ${shortHash ? `<p class="text-gray-500 text-xs mt-3">(Lacre da Lista: ${shortHash})</p>` : ""}
           ${subscription_end_date ? `<p class="text-gray-600 mt-2">Válida até: <strong>${subscription_end_date}</strong></p>` : ""}
-          <p class="text-gray-500 mt-4">Você está concorrendo aos sorteios diários.</p>
         `,
         confirmButtonText: "Ótimo!",
         confirmButtonColor: "#22c55e",
@@ -887,11 +993,22 @@ const loadCurrentList = async () => {
   isLoadingCurrentList.value = true;
 
   try {
-    const response = await api.get("/public/current-list");
-    currentListData.value = response.data;
+    // Buscar lista de participantes
+    const listResponse = await api.get("/public/current-list");
+    currentListData.value = listResponse.data;
+
+    // Buscar dados do próximo sorteio (bloco alvo e lacre)
+    const nextDrawResponse = await api.get("/public/next-draw");
+    snapshotData.value = {
+      next_draw_target_block: nextDrawResponse.data.target_block,
+      explorer_url: nextDrawResponse.data.explorer_url,
+      list_hash: nextDrawResponse.data.list_hash,
+      total_participants: nextDrawResponse.data.total_participants,
+    };
   } catch (error) {
     console.error("Load current list error:", error);
     currentListData.value = null;
+    snapshotData.value = null;
   } finally {
     isLoadingCurrentList.value = false;
   }

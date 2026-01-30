@@ -23,15 +23,25 @@ class DrawService {
     }
   }
 
-  async performManualDraw(prizeDescription) {
+  async performManualDraw(prizeDescription, targetBlockHeight) {
     const client = await pool.connect();
     try {
       await client.query("BEGIN");
 
-      // 1. Buscar hash do Bitcoin ANTES do sorteio (para auditoria)
-      console.log("🔗 Buscando hash do Bitcoin...");
-      const bitcoinData = await this.fetchLatestBitcoinHash();
-      console.log("✅ Hash obtido:", bitcoinData.hash.substring(0, 16) + "...");
+      // 1. Buscar hash do bloco alvo do Bitcoin
+      console.log(`🔗 Buscando hash do bloco #${targetBlockHeight}...`);
+      let bitcoinData;
+      try {
+        bitcoinData = await this.fetchBlockHashByHeight(targetBlockHeight);
+        console.log(
+          "✅ Hash obtido:",
+          bitcoinData.hash.substring(0, 16) + "...",
+        );
+      } catch (blockError) {
+        throw new Error(
+          `Este bloco (#${targetBlockHeight}) ainda não foi minerado. Aguarde o tempo necessário.`,
+        );
+      }
 
       // 2. Buscar todos os membros ATIVOS (ordenados por ID para consistência)
       const usersQuery = `
@@ -63,8 +73,8 @@ class DrawService {
 
       // Calcular draw_hash manualmente (mesmo algoritmo do trigger)
       // Formato: seed_value | seed_source | participante_id
-      const concatenated = `${bitcoinData.hash}|https://blockchain.info/q/latesthash|${winner.id}`;
-      const crypto = await import("crypto");
+      const seedSource = `https://blockchain.info/block-height/${targetBlockHeight}`;
+      const concatenated = `${bitcoinData.hash}|${seedSource}|${winner.id}`;
       const drawHash = crypto
         .createHash("sha256")
         .update(concatenated)
@@ -93,7 +103,7 @@ class DrawService {
         prizeDescription,
         winner.id,
         bitcoinData.hash,
-        "https://blockchain.info/q/latesthash",
+        seedSource,
         participantsCount,
         drawHash,
       ]);
@@ -183,6 +193,63 @@ class DrawService {
     } catch (error) {
       console.error("❌ Erro ao gerar snapshot:", error.message);
       throw new Error("Falha ao gerar snapshot da lista de participantes.");
+    }
+  }
+
+  /**
+   * Busca o hash de um bloco Bitcoin específico pela altura.
+   * @param {number} blockHeight - Altura do bloco alvo
+   * @returns {Promise<{hash: string, height: number}>}
+   */
+  async fetchBlockHashByHeight(blockHeight) {
+    try {
+      const response = await axios.get(
+        `https://blockchain.info/block-height/${blockHeight}?format=json`,
+        { timeout: 15000 },
+      );
+
+      if (response.data && response.data.blocks && response.data.blocks[0]) {
+        const block = response.data.blocks[0];
+        return {
+          hash: block.hash,
+          height: block.height,
+        };
+      }
+
+      throw new Error(`Bloco ${blockHeight} não encontrado.`);
+    } catch (error) {
+      console.error(`❌ Erro ao buscar bloco ${blockHeight}:`, error.message);
+      throw new Error(`Falha ao obter hash do bloco ${blockHeight}.`);
+    }
+  }
+
+  /**
+   * Retorna snapshot completo para o endpoint público /public/snapshot.
+   * Inclui o bloco alvo do próximo sorteio se configurado.
+   * @returns {Promise<{total_participants, list_hash, target_block, explorer_url}>}
+   */
+  async getNextDrawSnapshot() {
+    try {
+      // Gerar snapshot da lista atual
+      const snapshot = await this.getParticipantSnapshot();
+
+      // Bloco alvo pode ser configurado via variável de ambiente ou banco
+      // Por enquanto, usamos uma variável de ambiente ou null
+      const targetBlock = process.env.NEXT_DRAW_TARGET_BLOCK
+        ? parseInt(process.env.NEXT_DRAW_TARGET_BLOCK, 10)
+        : null;
+
+      return {
+        total_participants: snapshot.total_participants,
+        list_hash: snapshot.list_hash,
+        target_block: targetBlock,
+        explorer_url: targetBlock
+          ? `https://mempool.space/block/${targetBlock}`
+          : null,
+      };
+    } catch (error) {
+      console.error("❌ Erro ao gerar snapshot para endpoint:", error.message);
+      throw error;
     }
   }
 }

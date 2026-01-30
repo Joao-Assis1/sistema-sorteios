@@ -41,7 +41,7 @@ components:
         prize:
           type: string
           description: Descrição do prêmio do sorteio
-          example: "iPhone 15 Pro Max 256GB"
+          example: "Camisa Oficial"
 
     DrawResponse:
       type: object
@@ -77,7 +77,7 @@ components:
                   example: "2026-01-25T21:12:25.000Z"
                 premio:
                   type: string
-                  example: "iPhone 15 Pro Max 256GB"
+                  example: "Camisa Oficial"
                 seed_value:
                   type: string
                   description: Bitcoin block hash usado como seed
@@ -180,7 +180,7 @@ components:
           format: date-time
         premio:
           type: string
-          example: "iPhone 15 Pro"
+          example: "Camisa Oficial"
         ganhador_nome:
           type: string
           example: "João Silva"
@@ -278,7 +278,7 @@ paths:
                           example: "João"
                         prize:
                           type: string
-                          example: "iPhone 15 Pro"
+                          example: "Camisa Oficial"
                         date:
                           type: string
                           example: "25/01/2026"
