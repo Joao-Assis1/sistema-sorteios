@@ -25,6 +25,13 @@ router.get("/members", authMiddleware, drawController.searchMembers);
 router.get("/draw-config", authMiddleware, drawController.getDrawConfig);
 router.put("/draw-config", authMiddleware, drawController.updateDrawConfig);
 
+// Export participants as CSV
+router.get(
+  "/export-participants",
+  authMiddleware,
+  drawController.exportParticipants,
+);
+
 // ========================================
 // ROTA PÚBLICA (Sem autenticação)
 // ========================================
