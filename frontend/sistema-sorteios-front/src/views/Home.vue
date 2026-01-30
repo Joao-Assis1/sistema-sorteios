@@ -395,40 +395,70 @@
               <h4 class="text-lg font-semibold text-gray-300 mb-4">
                 📋 Participantes Confirmados
               </h4>
+
+              <!-- Tabela de Participantes com Scroll -->
               <div
                 v-if="currentListData.participants.length > 0"
-                class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3"
+                class="bg-green-950/50 rounded-xl border border-gray-700 overflow-hidden"
               >
-                <div
-                  v-for="participant in currentListData.participants.slice(
-                    0,
-                    12,
-                  )"
-                  :key="participant.lucky_number"
-                  class="bg-gray-900 rounded-lg p-3 border border-gray-700 flex items-center gap-3"
-                >
-                  <div
-                    class="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm"
+                <div class="max-h-[400px] overflow-y-auto">
+                  <table class="w-full text-sm text-white">
+                    <thead class="bg-gray-800 sticky top-0 z-10">
+                      <tr>
+                        <th class="p-3 text-left font-semibold">Nº</th>
+                        <th class="p-3 text-left font-semibold">
+                          Participante
+                        </th>
+                        <th class="p-3 text-left font-semibold">E-mail</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-700">
+                      <tr
+                        v-for="participant in currentListData.participants"
+                        :key="participant.lucky_number"
+                        class="hover:bg-gray-800/50 transition"
+                      >
+                        <td class="p-3">
+                          <span
+                            class="inline-flex items-center justify-center w-8 h-8 bg-green-600 text-white rounded-full font-bold text-xs"
+                          >
+                            #{{ participant.lucky_number }}
+                          </span>
+                        </td>
+                        <td class="p-3 font-medium">{{ participant.name }}</td>
+                        <td class="p-3 text-gray-400">
+                          {{ participant.email }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Botão Download CSV -->
+                <div class="p-3 bg-gray-800 border-t border-gray-700">
+                  <button
+                    @click="downloadAuditCSV"
+                    class="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 px-4 rounded-lg text-sm flex items-center justify-center gap-2 transition"
                   >
-                    #{{ participant.lucky_number }}
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm text-white font-medium truncate">
-                      {{ participant.name }}
-                    </p>
-                    <p class="text-xs text-gray-500 truncate">
-                      {{ participant.email }}
-                    </p>
-                  </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      class="h-4 w-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    Baixar Lista de Auditoria (.csv)
+                  </button>
                 </div>
               </div>
-              <p
-                v-if="currentListData.participants.length > 12"
-                class="text-center text-gray-500 text-sm mt-4"
-              >
-                ... e mais
-                {{ currentListData.total_participants - 12 }} participantes
-              </p>
+
               <div
                 v-if="currentListData.participants.length === 0"
                 class="text-center py-8 text-gray-400"
@@ -832,6 +862,26 @@ const startValidation = (index) => {
     auditHistory.value[index].isValidating = false;
     auditHistory.value[index].showProof = true;
   }, 2000);
+};
+
+/**
+ * Baixa a lista de auditoria como CSV (dados mascarados)
+ */
+const downloadAuditCSV = () => {
+  if (!currentListData.value?.participants) return;
+
+  const header = "Nº da Sorte,Participante,E-mail\n";
+  const rows = currentListData.value.participants
+    .map((p) => `${p.lucky_number},"${p.name}","${p.email}"`)
+    .join("\n");
+
+  const blob = new Blob([header + rows], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "lista-auditoria.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 };
 
 /**
